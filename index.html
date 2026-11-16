@@ -77,10 +77,13 @@
     </div>
 </div>
 <script>
-    const PROJECT_ID = "vodniyuhta";
     const API_KEY = "AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
-        const BASE_URL = "https://googleapis.com";
     const DRIVER_PIN = "1234";
+
+    function fsUrl(path, extra) {
+        var base = "https://googleapis.com";
+        return base + path + "?key=" + API_KEY + (extra ? "&" + extra : "");
+    }
 
     function toFirestoreFields(obj) {
         const fields = {};
@@ -103,7 +106,7 @@
     }
 
     async function fsAdd(path, data) {
-        const r = await fetch(`${BASE_URL}/${path}?key=${API_KEY}`, {
+        const r = await fetch(fsUrl(path), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(toFirestoreFields(data))
@@ -113,26 +116,32 @@
     }
 
     async function fsGet(path) {
-        const r = await fetch(`${BASE_URL}/${path}?key=${API_KEY}`);
+        const r = await fetch(fsUrl(path));
         if (r.status === 404) return null;
         if (!r.ok) throw new Error("Ошибка чтения");
         return fromFirestoreDoc(await r.json());
     }
 
     async function fsList(path) {
-        const r = await fetch(`${BASE_URL}/${path}?key=${API_KEY}`);
+        const r = await fetch(fsUrl(path));
         if (!r.ok) return [];
         const data = await r.json();
         return (data.documents || []).map(fromFirestoreDoc);
     }
 
     async function fsPatch(path, data) {
-        const mask = Object.keys(data).map(k => `updateMask.fieldPaths=${k}`).join("&");
-        await fetch(`${BASE_URL}/${path}?${mask}&key=${API_KEY}`, {
+        const mask = Object.keys(data).map(function(k) { return "updateMask.fieldPaths=" + k; }).join("&");
+        await fetch(fsUrl(path, mask), {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(toFirestoreFields(data))
         });
+    }
+
+    async function fsDelete(path) {
+        await fetch(fsUrl(path), { method: "DELETE" });
+    }
+
     }
 
     async function fsDelete(path) {
