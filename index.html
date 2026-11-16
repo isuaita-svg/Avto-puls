@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Заказ Авто">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <title>Заказ Авто Ухта</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #121212; color: #ffffff; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+        header { background-color: #1E1E1E; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2C2C2E; }
+        header h1 { font-size: 18px; font-weight: 700; }
+        .mode-btn { background: none; border: none; color: #FFCA28; font-size: 15px; font-weight: 600; cursor: pointer; padding: 6px; }
+        #chat-box, #driver-box { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 12px 14px; border-radius: 16px; font-size: 16px; line-height: 1.35; word-wrap: break-word; }
+        .msg.bot { background-color: #2C2C2E; color: #ffffff; align-self: flex-start; }
+        .msg.user { background-color: #FFCA28; color: #000000; align-self: flex-end; font-weight: 500; }
+        #offers-container { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow-y: auto; background: #18181A; border-top: 1px solid #2C2C2E; }
+        .offer-card { background: #252528; padding: 12px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .bottom-bar { background-color: #1E1E1E; padding: 10px; border-top: 1px solid #2C2C2E; display: flex; gap: 8px; }
+        input { flex: 1; background-color: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 12px; color: #fff; font-size: 16px; outline: none; }
+        input:focus { border-color: #FFCA28; }
+        .btn { background-color: #FFCA28; color: #000; border: none; border-radius: 12px; padding: 11px 16px; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; display: inline-block; }
+        .btn-green { background-color: #2E7D32; color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid #555; color: #fff; }
+        .btn-danger { background: transparent; border: 1px solid #cf6679; color: #cf6679; width: 100%; }
+        .card { background-color: #1E1E1E; border-radius: 16px; padding: 16px; border: 1px solid #2C2C2E; display: flex; flex-direction: column; gap: 8px; }
+        .hidden { display: none !important; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+        .modal-content { background: #1E1E1E; padding: 20px; border-radius: 16px; width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 12px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1 id="header-title">Заказ Авто</h1>
+    <button type="button" class="mode-btn" id="toggle-mode-btn">Я водитель</button>
+</header>
+
+<div id="chat-box"></div>
+
+<div id="offers-container" class="hidden">
+    <span style="font-size: 14px; color: #FFCA28; font-weight: 700;">Предложения от водителей:</span>
+    <div id="offers-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+</div>
+
+<div id="passenger-controls" class="bottom-bar">
+    <input type="text" id="chat-input" placeholder="Откуда забрать...">
+    <button type="button" class="btn" id="send-btn">Отпр.</button>
+</div>
+
+<div id="active-controls" class="bottom-bar hidden" style="flex-direction: column;">
+    <a id="call-driver-btn" href="#" class="btn hidden" style="width: 100%;">Позвонить водителю</a>
+    <button type="button" class="btn btn-danger" id="cancel-order-btn">Отменить весь заказ</button>
+</div>
+
+<div id="new-order-controls" class="bottom-bar hidden">
+    <button type="button" class="btn" id="new-order-btn" style="width: 100%;">Новый заказ</button>
+</div>
+
+<div id="driver-box" class="hidden"></div>
+
+<div id="pin-modal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Вход для водителя</h3>
+        <input type="password" id="pin-input" placeholder="PIN-код (1234)" inputmode="numeric">
+        <input type="tel" id="driver-phone-input" placeholder="Ваш номер телефона">
+        <p id="pin-error" style="color: #cf6679; font-size: 13px;" class="hidden">Проверьте PIN-код и номер</p>
+        <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn" id="login-driver-btn" style="flex: 1;">Войти</button>
+            <button type="button" class="btn btn-outline" id="close-pin-btn" style="flex: 1;">Отмена</button>
+        </div>
+    </div>
+</div>
+<script>
+    const PROJECT_ID = "vodniyuhta";
+    const API_KEY = "AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
+    const BASE_URL = `https://googleapis.com{PROJECT_ID}/databases/(default)/documents`;
+    const DRIVER_PIN = "1234";
+
+    function toFirestoreFields(obj) {
+        const fields = {};
+        for (const [k, v] of Object.entries(obj)) {
+            if (typeof v === "number") fields[k] = { integerValue: String(Math.floor(v)) };
+            else fields[k] = { stringValue: String(v) };
+        }
+        return { fields };
+    }
+
+    function fromFirestoreDoc(doc) {
+        const res = { id: doc.name.split("/").pop() };
+        if (!doc.fields) return res;
+        for (const [k, v] of Object.entries(doc.fields)) {
+            if (v.stringValue !== undefined) res[k] = v.stringValue;
+            else if (v.integerValue !== undefined) res[k] = Number(v.integerValue);
+            else if (v.doubleValue !== undefined) res[k] = Number(v.doubleValue);
+        }
+        return res;
+    }
+
+    async function fsAdd(path, data) {
+        const r = await fetch(`${BASE_URL}/${path}?key=${API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(toFirestoreFields(data))
+        });
+        if (!r.ok) throw new Error("Ошибка записи в базу");
+        return fromFirestoreDoc(await r.json());
+    }
+
+    async function fsGet(path) {
+        const r = await fetch(`${BASE_URL}/${path}?key=${API_KEY}`);
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error("Ошибка чтения");
+        return fromFirestoreDoc(await r.json());
+    }
+
+    async function fsList(path) {
+        const r = await fetch(`${BASE_URL}/${path}?key=${API_KEY}`);
+        if (!r.ok) return [];
+        const data = await r.json();
+        return (data.documents || []).map(fromFirestoreDoc);
+    }
+
+    async function fsPatch(path, data) {
+        const mask = Object.keys(data).map(k => `updateMask.fieldPaths=${k}`).join("&");
+        await fetch(`${BASE_URL}/${path}?${mask}&key=${API_KEY}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(toFirestoreFields(data))
+        });
+    }
+
+    async function fsDelete(path) {
+        await fetch(`${BASE_URL}/${path}?key=${API_KEY}`, { method: "DELETE" });
+    }
+    let step = 0, fromAddr = "", toAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null, isDriver = false;
+    let pollTimer = null;
+
+    const chatBox = document.getElementById("chat-box");
+    const chatInput = document.getElementById("chat-input");
+
+    function addMsg(text, isUser) {
+        const div = document.createElement("div");
+        div.className = "msg " + (isUser ? "user" : "bot");
+        div.innerText = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function updateControls() {
+        document.getElementById("passenger-controls").classList.toggle("hidden", step >= 3);
+        document.getElementById("active-controls").classList.toggle("hidden", step !== 3 && step !== 5);
+        document.getElementById("call-driver-btn").classList.toggle("hidden", !(step === 5 && selectedDriverPhone));
+        document.getElementById("new-order-controls").classList.toggle("hidden", step !== 6);
+        if (step !== 3) document.getElementById("offers-container").classList.add("hidden");
+
+        if (step === 0) { chatInput.placeholder = "Откуда забрать..."; chatInput.type = "text"; }
+        if (step === 1) { chatInput.placeholder = "Куда поедем?"; chatInput.type = "text"; }
+        if (step === 2) { chatInput.placeholder = "Номер телефона..."; chatInput.type = "tel"; }
+    }
+
+    function stopPolling() {
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    }
+
+    function resetChat() {
+        stopPolling();
+        chatBox.innerHTML = "";
+        currentOrderId = null; selectedDriverPhone = ""; step = 0;
+        addMsg("Привет! Откуда вас забрать?", false);
+        updateControls();
+    }
+
+    async function handleSend() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        addMsg(text, true);
+        chatInput.value = "";
+
+        if (step === 0) { fromAddr = text; addMsg("Принято! Куда поедем?", false); step = 1; }
+        else if (step === 1) { toAddr = text; addMsg("Укажите ваш номер телефона:", false); step = 2; }
+        else if (step === 2) {
+            userPhone = text;
+            step = 3;
+            updateControls();
+            try {
+                const created = await fsAdd("orders", {
+                    from: fromAddr, to: toAddr, phone: userPhone, driverPhone: "", price: "", status: "searching", createdAt: Date.now()
+                });
+                currentOrderId = created.id;
+                addMsg("Заявка отправлена! Ожидаем предложения от водителей...", false);
+                startPassengerPolling();
+            } catch (err) {
+                addMsg("Ошибка связи с сервером. Проверьте интернет и попробуйте снова.", false);
+                step = 2;
+            }
+        }
+        updateControls();
+    }
+    function startPassengerPolling() {
+        stopPolling();
+        const check = async () => {
+            if (!currentOrderId || isDriver) return;
+            if (step === 5) {
+                const ord = await fsGet(`orders/${currentOrderId}`);
+                if (!ord) {
+                    stopPolling();
+                    addMsg("Поездка завершена. Спасибо, что выбрали нас!", false);
+                    step = 6;
+                    updateControls();
+                }
+            } else if (step === 3) {
+                const allOffers = await fsList(`orders/${currentOrderId}/offers`);
+                const pending = allOffers.filter(o => o.status === "pending");
+                const list = document.getElementById("offers-list");
+                list.innerHTML = "";
+                pending.forEach(o => {
+                    const card = document.createElement("div");
+                    card.className = "offer-card";
+                    card.innerHTML = `
+                        <div>
+                            <div style="font-weight:700; font-size:17px;">Цена: ${o.price} ₽</div>
+                            <div style="font-size:12px; color:#aaa;">Водитель готов выехать</div>
+                        </div>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="btn btn-outline" style="padding:8px 10px; font-size:13px;" onclick="declineOffer('${o.id}', '${o.price}')">Отказаться</button>
+                            <button type="button" class="btn btn-green" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer('${o.id}', '${o.price}', '${o.driverPhone}')">Согласен</button>
+                        </div>`;
+                    list.appendChild(card);
+                });
+                document.getElementById("offers-container").classList.toggle("hidden", pending.length === 0);
+            }
+        };
+        check();
+        pollTimer = setInterval(check, 2500);
+    }
+
+    async function declineOffer(offerId, price) {
+        if (!currentOrderId) return;
+        await fsPatch(`orders/${currentOrderId}/offers/${offerId}`, { status: "declined" });
+        addMsg(`Отказался от цены ${price} ₽. Ждем другие варианты...`, false);
+    }
+
+    async function acceptOffer(offerId, price, dPhone) {
+        if (!currentOrderId) return;
+        await fsPatch(`orders/${currentOrderId}`, { status: "accepted", price: price, driverPhone: dPhone });
+        await fsPatch(`orders/${currentOrderId}/offers/${offerId}`, { status: "accepted" });
+        selectedDriverPhone = dPhone;
+        document.getElementById("offers-container").classList.add("hidden");
+        addMsg(`Выбрал поездку за ${price} ₽!`, true);
+        addMsg("Отлично! Водитель принял заказ и уже выехал к вам.", false);
+        const cleanPhone = selectedDriverPhone.replace(/[^\d+]/g, "");
+        document.getElementById("call-driver-btn").href = `tel:${cleanPhone}`;
+        step = 5;
+        updateControls();
+    }
+    function startDriverPolling() {
+        stopPolling();
+        const driverBox = document.getElementById("driver-box");
+        const refresh = async () => {
+            if (!isDriver) return;
+            if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+            const allOrders = await fsList("orders");
+            const now = Date.now();
+            let html = "";
+            let count = 0;
+
+            for (const o of allOrders) {
+                if (o.status === "searching" && (now - (o.createdAt || 0) > 15 * 60 * 1000)) {
+                    fsDelete(`orders/${o.id}`);
+                    continue;
+                }
+                if (o.status !== "searching" && !(o.status === "accepted" && o.driverPhone === driverPhone)) continue;
+                count++;
+                let actionHtml = "";
+                if (o.status === "accepted" && o.driverPhone === driverPhone) {
+                    const cleanClient = (o.phone || "").replace(/[^\d+]/g, "");
+                    actionHtml = `
+                        <p style="color:#4CAF50; font-weight:bold; margin-bottom:8px;">Пассажир выбрал вас! Цена: ${o.price} ₽</p>
+                        <a href="tel:${cleanClient}" class="btn btn-outline" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>
+                        <button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder('${o.id}')">Завершить заказ</button>`;
+                } else {
+                    const offers = await fsList(`orders/${o.id}/offers`);
+                    const myOffer = offers.find(off => off.driverPhone === driverPhone);
+                    if (myOffer) {
+                        if (myOffer.status === "pending") {
+                            actionHtml = `<p style="color:#aaa;">Ваша цена ${myOffer.price} ₽ отправлена. Ждем ответа...</p>`;
+                        } else if (myOffer.status === "declined") {
+                            actionHtml = `
+                                <p style="color:#cf6679; font-size:13px; margin-bottom:6px;">Пассажир отказался от ${myOffer.price} ₽. Предложите другую:</p>
+                                <div style="display:flex; gap:8px;">
+                                    <input type="number" id="price-${o.id}" placeholder="Новая цена (₽)">
+                                    <button type="button" class="btn" onclick="updateOffer('${o.id}', '${myOffer.id}')">Предложить</button>
+                                </div>`;
+                        }
+                    } else {
+                        actionHtml = `
+                            <div style="display:flex; gap:8px;">
+                                <input type="number" id="price-${o.id}" placeholder="Ваша цена (₽)">
+                                <button type="button" class="btn" onclick="createOffer('${o.id}')">Предложить</button>
+                            </div>`;
+                    }
+                }
+                html += `<div class="card"><strong>Откуда: ${o.from}</strong><span>Куда: ${o.to}</span><span style="color:#FFCA28; font-weight:600;">Телефон: ${o.phone}</span><div style="margin-top:8px;">${actionHtml}</div></div>`;
+            }
+            driverBox.innerHTML = count > 0 ? html : `<p style="text-align:center; color:#888; margin-top:40px;">Пока нет активных заказов</p>`;
+        };
+        refresh();
+        pollTimer = setInterval(refresh, 3000);
+    }
+
+    async function createOffer(orderId) {
+        const inp = document.getElementById(`price-${orderId}`);
+        if (inp && inp.value.trim()) {
+            await fsAdd(`orders/${orderId}/offers`, { driverPhone: driverPhone, price: inp.value.trim(), status: "pending" });
+            inp.blur();
+        }
+    }
+
+    async function updateOffer(orderId, offerId) {
+        const inp = document.getElementById(`price-${orderId}`);
+        if (inp && inp.value.trim()) {
+            await fsPatch(`orders/${orderId}/offers/${offerId}`, { price: inp.value.trim(), status: "pending" });
+            inp.blur();
+        }
+    }
+
+    async function completeOrder(id) {
+        await fsDelete(`orders/${id}`);
+    }
+
+    document.getElementById("send-btn").addEventListener("click", handleSend);
+    chatInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleSend(); });
+    document.getElementById("new-order-btn").addEventListener("click", resetChat);
+
+    document.getElementById("cancel-order-btn").addEventListener("click", async () => {
+        stopPolling();
+        if (currentOrderId) await fsDelete(`orders/${currentOrderId}`);
+        document.getElementById("offers-container").classList.add("hidden");
+        addMsg("Отменить заказ", true);
+        addMsg("Заказ полностью отменен.", false);
+        step = 6;
+        updateControls();
+    });
+
+    document.getElementById("toggle-mode-btn").addEventListener("click", () => {
+        if (isDriver) {
+            isDriver = false;
+            stopPolling();
+            document.getElementById("header-title").innerText = "Заказ Авто";
+            document.getElementById("toggle-mode-btn").innerText = "Я водитель";
+            document.getElementById("driver-box").classList.add("hidden");
+            chatBox.classList.remove("hidden");
+            if (currentOrderId && (step === 3 || step === 5)) startPassengerPolling();
+            updateControls();
+        } else {
+            document.getElementById("pin-error").classList.add("hidden");
+            document.getElementById("driver-phone-input").value = localStorage.getItem("driver_phone") || "";
+            document.getElementById("pin-modal").classList.remove("hidden");
+        }
+    });
+
+    document.getElementById("close-pin-btn").addEventListener("click", () => {
+        document.getElementById("pin-modal").classList.add("hidden");
+    });
+
+    document.getElementById("login-driver-btn").addEventListener("click", () => {
+        const pin = document.getElementById("pin-input").value.trim();
+        const phone = document.getElementById("driver-phone-input").value.trim();
+        if (pin === DRIVER_PIN && phone) {
+            localStorage.setItem("driver_phone", phone);
+            driverPhone = phone;
+            isDriver = true;
+            document.getElementById("pin-modal").classList.add("hidden");
+            document.getElementById("pin-input").value = "";
+            document.getElementById("header-title").innerText = "Режим Водителя";
+            document.getElementById("toggle-mode-btn").innerText = "Я пассажир";
+            chatBox.classList.add("hidden");
+            document.getElementById("offers-container").classList.add("hidden");
+            ["passenger-controls", "active-controls", "new-order-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
+            document.getElementById("driver-box").classList.remove("hidden");
+            startDriverPolling();
+        } else {
+            document.getElementById("pin-error").classList.remove("hidden");
+        }
+    });
+
+    resetChat();
+</script>
+</body>
+</html>
