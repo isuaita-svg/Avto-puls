@@ -142,8 +142,6 @@
         await fetch(fsUrl(path), { method: "DELETE" });
     }
 
-    }
-
     async function fsDelete(path) {
         await fetch(`${BASE_URL}/${path}?key=${API_KEY}`, { method: "DELETE" });
     }
