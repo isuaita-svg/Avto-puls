@@ -80,10 +80,12 @@
     const API_KEY = "AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
     const DRIVER_PIN = "1234";
 
-    function fsUrl(path, extra) {
-        var base = "https://googleapis.com";
-        return base + path + "?key=" + API_KEY + (extra ? "&" + extra : "");
+     function fsUrl(path, extra) {
+        var h = "https://firestore." + "googleapis.com";
+        var p = "/v1/projects/vodniyuhta/databases/(default)/documents/";
+        return h + p + path + "?key=" + API_KEY + (extra ? "&" + extra : "");
     }
+
 
     function toFirestoreFields(obj) {
         const fields = {};
