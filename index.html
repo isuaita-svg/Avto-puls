@@ -5,46 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Заказ Авто">
+    <meta name="apple-mobile-web-app-title" content="АВТО ПЛЮС">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
-    <title>Заказ Авто Ухта</title>
+    <title>АВТО ПЛЮС • Ухта</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #121212; color: #ffffff; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
-        header { background-color: #1E1E1E; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2C2C2E; }
-        header h1 { font-size: 18px; font-weight: 700; }
-        .mode-btn { background: none; border: none; color: #FFCA28; font-size: 15px; font-weight: 600; cursor: pointer; padding: 6px; }
+        body { background-color: #050508; color: #ffffff; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+        header { background-color: #110A14; padding: 12px 14px 6px; display: flex; justify-content: space-between; align-items: center; }
+        .brand-wrap { display: flex; align-items: center; gap: 8px; }
+        header h1 { font-size: 19px; font-weight: 800; letter-spacing: 1px; color: #fff; text-shadow: 0 0 10px rgba(255,30,122,0.6); }
+        .badge-driver { font-size: 10px; font-weight: 700; color: #00E5FF; border: 1px solid #00E5FF; background: rgba(0,229,255,0.12); padding: 2px 6px; border-radius: 6px; }
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        .link-btn { background: none; border: none; color: #00E5FF; font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px; }
+        .pulse-bar { background: #110A14; width: 100%; height: 16px; display: block; border-bottom: 1px solid rgba(255,30,122,0.25); }
         #chat-box, #driver-box { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 80%; padding: 12px 14px; border-radius: 16px; font-size: 16px; line-height: 1.35; word-wrap: break-word; }
-        .msg.bot { background-color: #2C2C2E; color: #ffffff; align-self: flex-start; }
-        .msg.user { background-color: #FFCA28; color: #000000; align-self: flex-end; font-weight: 500; }
-        #offers-container { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 42vh; overflow-y: auto; background: #18181A; border-top: 1px solid #2C2C2E; }
-        .offer-card { background: #252528; padding: 12px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .bottom-bar { background-color: #1E1E1E; padding: 10px; border-top: 1px solid #2C2C2E; display: flex; gap: 8px; }
-        input { flex: 1; background-color: #2C2C2E; border: 1px solid #3A3A3C; border-radius: 12px; padding: 12px; color: #fff; font-size: 16px; outline: none; }
-        input:focus { border-color: #FFCA28; }
-        .btn { background-color: #FFCA28; color: #000; border: none; border-radius: 12px; padding: 11px 16px; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; display: inline-block; }
-        .btn-green { background-color: #2E7D32; color: #fff; }
-        .btn-outline { background: transparent; border: 1px solid #555; color: #fff; }
-        .btn-danger { background: transparent; border: 1px solid #cf6679; color: #cf6679; width: 100%; }
-        .card { background-color: #1E1E1E; border-radius: 16px; padding: 16px; border: 1px solid #2C2C2E; display: flex; flex-direction: column; gap: 8px; }
+        .msg { max-width: 82%; padding: 11px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; word-wrap: break-word; }
+        .msg.bot { background-color: #160D1B; color: #ffffff; align-self: flex-start; border: 1.2px solid rgba(0,229,255,0.55); box-shadow: 0 0 10px rgba(0,229,255,0.1); }
+        .msg.user { background-color: rgba(255,30,122,0.22); color: #ffffff; align-self: flex-end; border: 1.2px solid #FF1E7A; box-shadow: 0 0 10px rgba(255,30,122,0.2); }
+        #offers-container { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 44vh; overflow-y: auto; background: #110A14; border-top: 1px solid rgba(255,30,122,0.4); }
+        .offer-card { background: #160D1B; border: 1.5px solid #FF1E7A; padding: 12px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; box-shadow: 0 0 12px rgba(255,30,122,0.2); }
+        .bottom-bar { background-color: #110A14; padding: 10px 12px; border-top: 1px solid rgba(255,30,122,0.3); display: flex; gap: 8px; }
+        input { flex: 1; background-color: #160D1B; border: 1.2px solid rgba(255,30,122,0.5); border-radius: 14px; padding: 12px; color: #fff; font-size: 15px; outline: none; }
+        input:focus { border-color: #00E5FF; box-shadow: 0 0 8px rgba(0,229,255,0.35); }
+        .btn { background-color: #FF1E7A; color: #fff; border: 1.5px solid #FF1E7A; border-radius: 14px; padding: 10px 15px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; display: inline-block; box-shadow: 0 0 12px rgba(255,30,122,0.4); }
+        .btn-cyan { background-color: #00E5FF; color: #000; border-color: #00E5FF; box-shadow: 0 0 12px rgba(0,229,255,0.4); }
+        .btn-green { background-color: #00E676; color: #000; border-color: #00E676; box-shadow: 0 0 12px rgba(0,230,118,0.35); }
+        .btn-outline-pink { background: #160D1B; border: 1.5px solid #FF1E7A; color: #fff; box-shadow: 0 0 8px rgba(255,30,122,0.25); }
+        .btn-outline-cyan { background: #160D1B; border: 1.5px solid #00E5FF; color: #fff; box-shadow: 0 0 8px rgba(0,229,255,0.25); }
+        .card { background-color: #160D1B; border-radius: 18px; padding: 16px; border: 1.5px solid #FF1E7A; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 0 14px rgba(255,30,122,0.2); }
+        .card.accepted { border-color: #00E5FF; box-shadow: 0 0 14px rgba(0,229,255,0.25); }
         .hidden { display: none !important; }
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
-        .modal-content { background: #1E1E1E; padding: 20px; border-radius: 16px; width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 12px; }
+        .modal { position: fixed; inset: 0; background: rgba(5,5,8,0.88); display: flex; align-items: center; justify-content: center; padding: 18px; z-index: 100; }
+        .modal-content { background: #110A14; border: 1.5px solid #FF1E7A; box-shadow: 0 0 24px rgba(255,30,122,0.35); padding: 20px; border-radius: 20px; width: 100%; max-width: 360px; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column; gap: 11px; }
+        .modal-content.cyan-border { border-color: #00E5FF; box-shadow: 0 0 24px rgba(0,229,255,0.3); }
     </style>
 </head>
 <body>
 
 <header>
-    <h1 id="header-title">Заказ Авто</h1>
-    <button type="button" class="mode-btn" id="toggle-mode-btn">Я водитель</button>
+    <div class="brand-wrap">
+        <h1>АВТО ПЛЮС</h1>
+        <span id="driver-badge" class="badge-driver hidden">ВОДИТЕЛЬ</span>
+    </div>
+    <div class="header-actions">
+        <button type="button" class="link-btn" id="open-rules-btn">Правила</button>
+        <button type="button" class="btn btn-outline-pink" style="padding:7px 12px; font-size:13px;" id="toggle-mode-btn">Водитель</button>
+    </div>
 </header>
+<svg class="pulse-bar" viewBox="0 0 360 18" preserveAspectRatio="none">
+    <path d="M0,9 L126,9 L140,2 L154,16 L168,1 L182,14 L194,9 L360,9" fill="none" stroke="#FF1E7A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
 
 <div id="chat-box"></div>
 
 <div id="offers-container" class="hidden">
-    <span style="font-size: 14px; color: #FFCA28; font-weight: 700;">Предложения от водителей:</span>
+    <span style="font-size: 14px; color: #00E5FF; font-weight: 700;">Предложения от водителей:</span>
     <div id="offers-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
 </div>
 
@@ -54,38 +70,57 @@
 </div>
 
 <div id="active-controls" class="bottom-bar hidden" style="flex-direction: column;">
-    <a id="call-driver-btn" href="#" class="btn hidden" style="width: 100%;">Позвонить водителю</a>
-    <button type="button" class="btn btn-danger" id="cancel-order-btn">Отменить весь заказ</button>
+    <div id="driver-track-card" class="hidden" style="background:#160D1B; border:1.2px solid #00E5FF; border-radius:14px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <div style="color:#00E5FF; font-weight:700; font-size:14px;">Водитель в пути</div>
+            <div id="driver-dist-text" style="color:#fff; font-size:13px;">Определяем координаты...</div>
+        </div>
+        <a id="map-driver-btn" href="#" target="_blank" class="btn btn-cyan" style="padding:8px 12px; font-size:13px;">На карте</a>
+    </div>
+    <a id="call-driver-btn" href="#" class="btn btn-green hidden" style="width: 100%;">Позвонить водителю</a>
+    <button type="button" class="btn btn-outline-pink" id="cancel-order-btn" style="width: 100%;">Отменить заявку</button>
 </div>
 
 <div id="new-order-controls" class="bottom-bar hidden">
-    <button type="button" class="btn" id="new-order-btn" style="width: 100%;">Новый заказ</button>
+    <button type="button" class="btn" id="new-order-btn" style="width: 100%;">Новая заявка</button>
 </div>
 
 <div id="driver-box" class="hidden"></div>
 
+<div id="rules-modal" class="modal hidden">
+    <div class="modal-content cyan-border">
+        <h3 style="color:#00E5FF; font-size:17px;">ПРАВИЛА СЕРВИСА АВТО ПЛЮС</h3>
+        <p style="font-size:13px; color:#FF5CA0; font-weight:700;">1. Статус сервиса</p>
+        <p style="font-size:13px; color:#fff; line-height:1.4;">«АВТО ПЛЮС» является исключительно информационной онлайн-площадкой для поиска попутчиков и свободных водителей. Сервис <b>НЕ является службой такси</b> или транспортной компанией и не оказывает услуги по перевозке пассажиров и багажа.</p>
+        <p style="font-size:13px; color:#FF5CA0; font-weight:700;">2. Ограничение ответственности</p>
+        <p style="font-size:13px; color:#ccc; line-height:1.4;">Все договоренности о цене, маршруте и условиях поездки заключаются напрямую между пассажиром и водителем. Разработчик и администрация не несут ответственности:<br>• за действия, безопасность, пунктуальность и добросовестность водителей и пассажиров;<br>• за забытые, оставленные или поврежденные в автомобиле личные вещи, деньги и документы.</p>
+        <button type="button" class="btn btn-cyan" id="accept-rules-btn" style="width:100%; margin-top:4px;">Принимаю условия</button>
+    </div>
+</div>
+
 <div id="pin-modal" class="modal hidden">
     <div class="modal-content">
-        <h3>Вход для водителя</h3>
-        <input type="password" id="pin-input" placeholder="PIN-код (1234)" inputmode="numeric">
-        <input type="tel" id="driver-phone-input" placeholder="Ваш номер телефона">
-        <p id="pin-error" style="color: #cf6679; font-size: 13px;" class="hidden">Проверьте PIN-код и номер</p>
-        <div style="display: flex; gap: 8px;">
+        <h3 id="pin-modal-title" style="color:#FF5CA0; font-size:18px;">ВХОД ДЛЯ ВОДИТЕЛЯ</h3>
+        <p id="pin-modal-desc" style="font-size:13px; color:#ccc; line-height:1.35;">Введите ваш номер телефона и личный 4-значный PIN-код:</p>
+        <input type="tel" id="driver-phone-input" placeholder="Номер телефона">
+        <input type="password" id="pin-input" maxlength="4" placeholder="Личный PIN-код (4 цифры)" inputmode="numeric">
+        <p id="pin-error" style="color:#FF5252; font-size:13px;" class="hidden"></p>
+        <button type="button" class="link-btn" id="switch-register-btn" style="text-align:left; padding:2px 0;">Нет PIN-кода? Получить на 6 мес. бесплатно</button>
+        <div style="display: flex; gap: 8px; margin-top:4px;">
             <button type="button" class="btn" id="login-driver-btn" style="flex: 1;">Войти</button>
-            <button type="button" class="btn btn-outline" id="close-pin-btn" style="flex: 1;">Отмена</button>
+            <button type="button" class="btn btn-outline-pink" id="close-pin-btn" style="flex: 1;">Отмена</button>
         </div>
     </div>
 </div>
 <script>
     const API_KEY = "AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
-    const DRIVER_PIN = "0104";
+    const ADMIN_CONTACT = "https://vk.ru/id223223626";
 
-     function fsUrl(path, extra) {
+    function fsUrl(path, extra) {
         var h = "https://firestore." + "googleapis.com";
         var p = "/v1/projects/vodniyuhta/databases/(default)/documents/";
         return h + p + path + "?key=" + API_KEY + (extra ? "&" + extra : "");
     }
-
 
     function toFirestoreFields(obj) {
         const fields = {};
@@ -113,7 +148,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(toFirestoreFields(data))
         });
-        if (!r.ok) throw new Error("Ошибка записи в базу");
+        if (!r.ok) throw new Error("Ошибка записи");
         return fromFirestoreDoc(await r.json());
     }
 
@@ -125,14 +160,14 @@
     }
 
     async function fsList(path) {
-        const r = await fetch(fsUrl(path));
+        const r = await fetch(fsUrl(path, "pageSize=100"));
         if (!r.ok) return [];
         const data = await r.json();
         return (data.documents || []).map(fromFirestoreDoc);
     }
 
     async function fsPatch(path, data) {
-        const mask = Object.keys(data).map(function(k) { return "updateMask.fieldPaths=" + k; }).join("&");
+        const mask = Object.keys(data).map(k => "updateMask.fieldPaths=" + k).join("&");
         await fetch(fsUrl(path, mask), {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -144,11 +179,28 @@
         await fetch(fsUrl(path), { method: "DELETE" });
     }
 
-    async function fsDelete(path) {
-        await fetch(`${BASE_URL}/${path}?key=${API_KEY}`, { method: "DELETE" });
+    function getBrowserLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) return resolve(null);
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+                () => resolve(null),
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        });
     }
-    let step = 0, fromAddr = "", toAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null, isDriver = false;
-    let pollTimer = null;
+
+    function calcDistanceText(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const toRad = d => d * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+        const meters = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        return meters < 1000 ? `${meters} м от вас` : `${(meters / 1000).toFixed(1)} км от вас`;
+    }
+    let step = 0, fromAddr = "", toAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null;
+    let isDriver = false, isRegisterMode = false, pollTimer = null, gpsTimer = null;
 
     const chatBox = document.getElementById("chat-box");
     const chatInput = document.getElementById("chat-input");
@@ -165,6 +217,7 @@
         document.getElementById("passenger-controls").classList.toggle("hidden", step >= 3);
         document.getElementById("active-controls").classList.toggle("hidden", step !== 3 && step !== 5);
         document.getElementById("call-driver-btn").classList.toggle("hidden", !(step === 5 && selectedDriverPhone));
+        document.getElementById("driver-track-card").classList.toggle("hidden", step !== 5);
         document.getElementById("new-order-controls").classList.toggle("hidden", step !== 6);
         if (step !== 3) document.getElementById("offers-container").classList.add("hidden");
 
@@ -173,15 +226,16 @@
         if (step === 2) { chatInput.placeholder = "Номер телефона..."; chatInput.type = "tel"; }
     }
 
-    function stopPolling() {
+    function stopTimers() {
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        if (gpsTimer) { clearInterval(gpsTimer); gpsTimer = null; }
     }
 
     function resetChat() {
-        stopPolling();
+        stopTimers();
         chatBox.innerHTML = "";
         currentOrderId = null; selectedDriverPhone = ""; step = 0;
-        addMsg("Привет! Откуда вас забрать?", false);
+        addMsg("Привет! Это АВТО ПЛЮС. Откуда вас забрать?", false);
         updateControls();
     }
 
@@ -197,9 +251,14 @@
             userPhone = text;
             step = 3;
             updateControls();
+            const loc = await getBrowserLocation();
             try {
                 const created = await fsAdd("orders", {
-                    from: fromAddr, to: toAddr, phone: userPhone, driverPhone: "", price: "", status: "searching", createdAt: Date.now()
+                    from: fromAddr, to: toAddr, phone: userPhone, driverPhone: "", price: "",
+                    status: "searching", createdAt: Date.now(),
+                    driverLat: "", driverLon: "",
+                    clientLat: loc ? String(loc.lat) : "",
+                    clientLon: loc ? String(loc.lon) : ""
                 });
                 currentOrderId = created.id;
                 addMsg("Заявка отправлена! Ожидаем предложения от водителей...", false);
@@ -212,16 +271,30 @@
         updateControls();
     }
     function startPassengerPolling() {
-        stopPolling();
+        stopTimers();
         const check = async () => {
             if (!currentOrderId || isDriver) return;
             if (step === 5) {
                 const ord = await fsGet(`orders/${currentOrderId}`);
                 if (!ord) {
-                    stopPolling();
-                    addMsg("Поездка завершена. Спасибо, что выбрали нас!", false);
+                    stopTimers();
+                    addMsg("Поездка завершена. Пожалуйста, не забудьте свои вещи в салоне. Спасибо, что выбрали АВТО ПЛЮС!", false);
                     step = 6;
                     updateControls();
+                } else {
+                    const dLat = parseFloat(ord.driverLat);
+                    const dLon = parseFloat(ord.driverLon);
+                    const distEl = document.getElementById("driver-dist-text");
+                    const mapBtn = document.getElementById("map-driver-btn");
+                    if (!isNaN(dLat) && !isNaN(dLon)) {
+                        mapBtn.href = `https://yandex.ru{dLon},${dLat}&z=16&l=map`;
+                        mapBtn.classList.remove("hidden");
+                        const myLoc = await getBrowserLocation();
+                        distEl.innerText = myLoc ? calcDistanceText(myLoc.lat, myLoc.lon, dLat, dLon) : "Координаты получены";
+                    } else {
+                        mapBtn.classList.add("hidden");
+                        distEl.innerText = "Определяем координаты водителя...";
+                    }
                 }
             } else if (step === 3) {
                 const allOffers = await fsList(`orders/${currentOrderId}/offers`);
@@ -233,12 +306,12 @@
                     card.className = "offer-card";
                     card.innerHTML = `
                         <div>
-                            <div style="font-weight:700; font-size:17px;">Цена: ${o.price} ₽</div>
-                            <div style="font-size:12px; color:#aaa;">Водитель готов выехать</div>
+                            <div style="font-weight:800; font-size:19px; color:#00E5FF;">${o.price} ₽</div>
+                            <div style="font-size:12px; color:#ccc;">Водитель готов выехать</div>
                         </div>
                         <div style="display:flex; gap:6px;">
-                            <button type="button" class="btn btn-outline" style="padding:8px 10px; font-size:13px;" onclick="declineOffer('${o.id}', '${o.price}')">Отказаться</button>
-                            <button type="button" class="btn btn-green" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer('${o.id}', '${o.price}', '${o.driverPhone}')">Согласен</button>
+                            <button type="button" class="btn btn-outline-pink" style="padding:8px 10px; font-size:13px;" onclick="declineOffer('${o.id}', '${o.price}')">Отказать</button>
+                            <button type="button" class="btn btn-cyan" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer('${o.id}', '${o.price}', '${o.driverPhone}')">Согласен</button>
                         </div>`;
                     list.appendChild(card);
                 });
@@ -257,20 +330,36 @@
 
     async function acceptOffer(offerId, price, dPhone) {
         if (!currentOrderId) return;
-        await fsPatch(`orders/${currentOrderId}`, { status: "accepted", price: price, driverPhone: dPhone });
+        const loc = await getBrowserLocation();
+        const upd = { status: "accepted", price: price, driverPhone: dPhone };
+        if (loc) { upd.clientLat = String(loc.lat); upd.clientLon = String(loc.lon); }
+        await fsPatch(`orders/${currentOrderId}`, upd);
         await fsPatch(`orders/${currentOrderId}/offers/${offerId}`, { status: "accepted" });
         selectedDriverPhone = dPhone;
         document.getElementById("offers-container").classList.add("hidden");
         addMsg(`Выбрал поездку за ${price} ₽!`, true);
-        addMsg("Отлично! Водитель принял заказ и уже выехал к вам.", false);
+        addMsg("Отлично! Водитель принял заявку и уже выехал к вам.", false);
         const cleanPhone = selectedDriverPhone.replace(/[^\d+]/g, "");
         document.getElementById("call-driver-btn").href = `tel:${cleanPhone}`;
         step = 5;
         updateControls();
     }
     function startDriverPolling() {
-        stopPolling();
+        stopTimers();
         const driverBox = document.getElementById("driver-box");
+        let activeOrderIdForGps = null;
+
+        gpsTimer = setInterval(async () => {
+            if (!isDriver || !activeOrderIdForGps) return;
+            const loc = await getBrowserLocation();
+            if (loc) {
+                await fsPatch(`orders/${activeOrderIdForGps}`, {
+                    driverLat: String(loc.lat),
+                    driverLon: String(loc.lon)
+                });
+            }
+        }, 5000);
+
         const refresh = async () => {
             if (!isDriver) return;
             if (document.activeElement && document.activeElement.tagName === "INPUT") return;
@@ -278,6 +367,7 @@
             const now = Date.now();
             let html = "";
             let count = 0;
+            activeOrderIdForGps = null;
 
             for (const o of allOrders) {
                 if (o.status === "searching" && (now - (o.createdAt || 0) > 15 * 60 * 1000)) {
@@ -286,22 +376,31 @@
                 }
                 if (o.status !== "searching" && !(o.status === "accepted" && o.driverPhone === driverPhone)) continue;
                 count++;
+                const isMine = (o.status === "accepted" && o.driverPhone === driverPhone);
+                if (isMine) activeOrderIdForGps = o.id;
+
                 let actionHtml = "";
-                if (o.status === "accepted" && o.driverPhone === driverPhone) {
+                if (isMine) {
                     const cleanClient = (o.phone || "").replace(/[^\d+]/g, "");
+                    const mapFrom = `https://yandex.ru{encodeURIComponent("Ухта " + o.from)}`;
+                    const mapTo = `https://yandex.ru{encodeURIComponent("Ухта " + o.to)}`;
                     actionHtml = `
-                        <p style="color:#4CAF50; font-weight:bold; margin-bottom:8px;">Пассажир выбрал вас! Цена: ${o.price} ₽</p>
-                        <a href="tel:${cleanClient}" class="btn btn-outline" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>
-                        <button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder('${o.id}')">Завершить заказ</button>`;
+                        <p style="color:#00E676; font-weight:bold; margin-bottom:8px;">Пассажир выбрал вас! Цена: ${o.price} ₽</p>
+                        <div style="display:flex; gap:8px; margin-bottom:8px;">
+                            <a href="${mapFrom}" target="_blank" class="btn btn-cyan" style="flex:1; font-size:13px;">К пассажиру</a>
+                            <a href="${mapTo}" target="_blank" class="btn" style="flex:1; font-size:13px;">До точки Б</a>
+                        </div>
+                        <a href="tel:${cleanClient}" class="btn btn-outline-cyan" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>
+                        <button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder('${o.id}')">Завершить поездку</button>`;
                 } else {
                     const offers = await fsList(`orders/${o.id}/offers`);
                     const myOffer = offers.find(off => off.driverPhone === driverPhone);
                     if (myOffer) {
                         if (myOffer.status === "pending") {
-                            actionHtml = `<p style="color:#aaa;">Ваша цена ${myOffer.price} ₽ отправлена. Ждем ответа...</p>`;
+                            actionHtml = `<p style="color:#FF5CA0; font-size:14px;">Ваша цена ${myOffer.price} ₽ отправлена. Ждем ответа...</p>`;
                         } else if (myOffer.status === "declined") {
                             actionHtml = `
-                                <p style="color:#cf6679; font-size:13px; margin-bottom:6px;">Пассажир отказался от ${myOffer.price} ₽. Предложите другую:</p>
+                                <p style="color:#FF5252; font-size:13px; margin-bottom:6px;">Пассажир отказался от ${myOffer.price} ₽. Предложите другую:</p>
                                 <div style="display:flex; gap:8px;">
                                     <input type="number" id="price-${o.id}" placeholder="Новая цена (₽)">
                                     <button type="button" class="btn" onclick="updateOffer('${o.id}', '${myOffer.id}')">Предложить</button>
@@ -315,9 +414,9 @@
                             </div>`;
                     }
                 }
-                html += `<div class="card"><strong>Откуда: ${o.from}</strong><span>Куда: ${o.to}</span><span style="color:#FFCA28; font-weight:600;">Телефон: ${o.phone}</span><div style="margin-top:8px;">${actionHtml}</div></div>`;
+                html += `<div class="card ${isMine ? 'accepted' : ''}"><strong>Откуда: ${o.from}</strong><span>Куда: ${o.to}</span><span style="color:#00E5FF; font-weight:600;">Телефон: ${o.phone}</span><div style="margin-top:8px;">${actionHtml}</div></div>`;
             }
-            driverBox.innerHTML = count > 0 ? html : `<p style="text-align:center; color:#888; margin-top:40px;">Пока нет активных заказов</p>`;
+            driverBox.innerHTML = count > 0 ? html : `<p style="text-align:center; color:#FF5CA0; margin-top:40px;">Пока нет активных заявок</p>`;
         };
         refresh();
         pollTimer = setInterval(refresh, 3000);
@@ -342,62 +441,131 @@
     async function completeOrder(id) {
         await fsDelete(`orders/${id}`);
     }
-
     document.getElementById("send-btn").addEventListener("click", handleSend);
     chatInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleSend(); });
     document.getElementById("new-order-btn").addEventListener("click", resetChat);
 
     document.getElementById("cancel-order-btn").addEventListener("click", async () => {
-        stopPolling();
+        stopTimers();
         if (currentOrderId) await fsDelete(`orders/${currentOrderId}`);
         document.getElementById("offers-container").classList.add("hidden");
-        addMsg("Отменить заказ", true);
-        addMsg("Заказ полностью отменен.", false);
+        addMsg("Отменить заявку", true);
+        addMsg("Заявка полностью отменена.", false);
         step = 6;
         updateControls();
+    });
+
+    // Правила сервиса
+    const rulesModal = document.getElementById("rules-modal");
+    if (!localStorage.getItem("auto_plus_rules_v1")) rulesModal.classList.remove("hidden");
+    document.getElementById("open-rules-btn").addEventListener("click", () => rulesModal.classList.remove("hidden"));
+    document.getElementById("accept-rules-btn").addEventListener("click", () => {
+        localStorage.setItem("auto_plus_rules_v1", "1");
+        rulesModal.classList.add("hidden");
+    });
+
+    // Переключение режима Водитель / Пассажир
+    const pinModal = document.getElementById("pin-modal");
+    const pinErr = document.getElementById("pin-error");
+
+    function updatePinModalUI() {
+        document.getElementById("pin-modal-title").innerText = isRegisterMode ? "БЕСПЛАТНЫЙ ДОСТУП 6 МЕС." : "ВХОД ДЛЯ ВОДИТЕЛЯ";
+        document.getElementById("pin-modal-desc").innerText = isRegisterMode
+            ? "Укажите ваш телефон и придумайте личный 4-значный PIN-код. Первые 6 месяцев бесплатно, далее по подписке."
+            : "Введите ваш номер телефона и личный 4-значный PIN-код:";
+        document.getElementById("pin-input").placeholder = isRegisterMode ? "Придумайте PIN (4 цифры)" : "Личный PIN-код (4 цифры)";
+        document.getElementById("login-driver-btn").innerText = isRegisterMode ? "Получить PIN" : "Войти";
+        document.getElementById("switch-register-btn").innerText = isRegisterMode ? "Уже есть PIN-код? Войти" : "Нет PIN-кода? Получить на 6 мес. бесплатно";
+        pinErr.classList.add("hidden");
+    }
+
+    document.getElementById("switch-register-btn").addEventListener("click", () => {
+        isRegisterMode = !isRegisterMode;
+        updatePinModalUI();
     });
 
     document.getElementById("toggle-mode-btn").addEventListener("click", () => {
         if (isDriver) {
             isDriver = false;
-            stopPolling();
-            document.getElementById("header-title").innerText = "Заказ Авто";
-            document.getElementById("toggle-mode-btn").innerText = "Я водитель";
+            stopTimers();
+            document.getElementById("driver-badge").classList.add("hidden");
+            document.getElementById("toggle-mode-btn").innerText = "Водитель";
             document.getElementById("driver-box").classList.add("hidden");
             chatBox.classList.remove("hidden");
             if (currentOrderId && (step === 3 || step === 5)) startPassengerPolling();
             updateControls();
         } else {
-            document.getElementById("pin-error").classList.add("hidden");
+            isRegisterMode = false;
+            updatePinModalUI();
             document.getElementById("driver-phone-input").value = localStorage.getItem("driver_phone") || "";
-            document.getElementById("pin-modal").classList.remove("hidden");
+            pinModal.classList.remove("hidden");
         }
     });
 
-    document.getElementById("close-pin-btn").addEventListener("click", () => {
-        document.getElementById("pin-modal").classList.add("hidden");
-    });
+    document.getElementById("close-pin-btn").addEventListener("click", () => pinModal.classList.add("hidden"));
 
-    document.getElementById("login-driver-btn").addEventListener("click", () => {
-        const pin = document.getElementById("pin-input").value.trim();
+    document.getElementById("login-driver-btn").addEventListener("click", async () => {
         const phone = document.getElementById("driver-phone-input").value.trim();
-        if (pin === DRIVER_PIN && phone) {
-            localStorage.setItem("driver_phone", phone);
-            driverPhone = phone;
-            isDriver = true;
-            document.getElementById("pin-modal").classList.add("hidden");
-            document.getElementById("pin-input").value = "";
-            document.getElementById("header-title").innerText = "Режим Водителя";
-            document.getElementById("toggle-mode-btn").innerText = "Я пассажир";
-            chatBox.classList.add("hidden");
-            document.getElementById("offers-container").classList.add("hidden");
-            ["passenger-controls", "active-controls", "new-order-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
-            document.getElementById("driver-box").classList.remove("hidden");
-            startDriverPolling();
-        } else {
-            document.getElementById("pin-error").classList.remove("hidden");
+        const pin = document.getElementById("pin-input").value.trim();
+        const loginBtn = document.getElementById("login-driver-btn");
+
+        if (phone.length < 6 || pin.length < 4) {
+            pinErr.innerText = "Введите корректный телефон и 4-значный PIN";
+            pinErr.classList.remove("hidden");
+            return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.innerText = "Проверка...";
+        pinErr.classList.add("hidden");
+
+        try {
+            const allDrivers = await fsList("drivers");
+            const existing = allDrivers.find(d => (d.phone || "").trim() === phone);
+
+            if (isRegisterMode) {
+                if (existing) {
+                    pinErr.innerText = `Этот номер уже зарегистрирован. Войдите по своему PIN или напишите ${ADMIN_CONTACT}`;
+                    pinErr.classList.remove("hidden");
+                } else {
+                    const expiresAt = Date.now() + 180 * 24 * 60 * 60 * 1000;
+                    await fsAdd("drivers", { phone: phone, pin: pin, expiresAt: expiresAt });
+                    enterDriverMode(phone);
+                }
+            } else {
+                if (!existing || (existing.pin || "").trim() !== pin) {
+                    pinErr.innerText = "Неверный номер телефона или PIN-код";
+                    pinErr.classList.remove("hidden");
+                } else if (existing.expiresAt && Date.now() > Number(existing.expiresAt)) {
+                    pinErr.innerText = `Бесплатные 6 месяцев истекли. Для продления подписки напишите: ${ADMIN_CONTACT}`;
+                    pinErr.classList.remove("hidden");
+                } else {
+                    enterDriverMode(phone);
+                }
+            }
+        } catch (e) {
+            pinErr.innerText = "Ошибка сети. Проверьте интернет и попробуйте снова.";
+            pinErr.classList.remove("hidden");
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.innerText = isRegisterMode ? "Получить PIN" : "Войти";
         }
     });
+
+    function enterDriverMode(phone) {
+        localStorage.setItem("driver_phone", phone);
+        driverPhone = phone;
+        isDriver = true;
+        pinModal.classList.add("hidden");
+        document.getElementById("pin-input").value = "";
+        document.getElementById("driver-badge").classList.remove("hidden");
+        document.getElementById("toggle-mode-btn").innerText = "Пассажир";
+        chatBox.classList.add("hidden");
+        document.getElementById("offers-container").classList.add("hidden");
+        ["passenger-controls", "active-controls", "new-order-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
+        document.getElementById("driver-box").classList.remove("hidden");
+        startDriverPolling();
+    }
 
     resetChat();
 </script>
