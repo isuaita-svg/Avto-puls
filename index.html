@@ -382,7 +382,7 @@
                             firstDriverFit = applySmartZoom(leafletMap, route0.distance, destLat, destLon, driverLine.getBounds(), firstDriverFit);
                             const km = (route0.distance / 1000).toFixed(1);
                             const min = Math.max(1, Math.round(route0.duration / 60));
-                            infoEl.innerHTML = `Маршрут: <b style="color:#38BDF8">${km} км</b> • ~${min} мин`;
+                                                       infoEl.innerHTML = "Маршрут: <b style='color:#38BDF8'>" + km + " км</b> • ~" + min + " мин"; 
                         }
                     };
 
