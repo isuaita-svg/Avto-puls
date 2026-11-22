@@ -101,7 +101,6 @@
 
 <div id="driver-box" class="hidden"></div>
 
-<!-- Окно встроенной карты -->
 <div id="map-modal" class="modal hidden">
     <div class="modal-content blue-border">
         <h3 id="map-modal-title" style="color:#38BDF8; font-size:16px;">Навигация АвтоПульс</h3>
@@ -111,7 +110,6 @@
     </div>
 </div>
 
-<!-- Окно Правил и Оферты -->
 <div id="rules-modal" class="modal hidden">
     <div class="modal-content blue-border">
         <h3 style="color:#38BDF8; font-size:17px;">ПРАВИЛА СЕРВИСА АВТОПУЛЬС</h3>
@@ -125,7 +123,6 @@
     </div>
 </div>
 
-<!-- Окно входа и продления подписки водителя -->
 <div id="pin-modal" class="modal hidden">
     <div class="modal-content">
         <h3 id="pin-modal-title" style="color:#D946EF; font-size:18px;">ВХОД ДЛЯ ВОДИТЕЛЯ</h3>
@@ -151,7 +148,7 @@
 </div>
 <script>
     const API_KEY = "AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
-    const PAY_WORKER_URL = "https://workers.dev";
+    const PAY_WORKER_URL = "https://" + "avtoplus-robokassa.workers.dev/pay";
 
     const DRIVER_PLANS = [
         { days: 1, label: "1 день", price: 100 },
@@ -162,8 +159,8 @@
     let selectedPlan = DRIVER_PLANS.at(0);
 
     function fsUrl(path, extra) {
-        var h = "https://firestore." + "googleapis.com";
-        var p = "/v1/projects/vodniyuhta/databases/(default)/documents/";
+        const h = "https://firestore." + "googleapis.com";
+        const p = "/v1/projects/vodniyuhta/databases/(default)/documents/";
         return h + p + path + "?key=" + API_KEY + (extra ? "&" + extra : "");
     }
 
@@ -254,10 +251,16 @@
         infoEl.innerText = "Загрузка карты Ухты...";
         document.getElementById("map-modal").classList.remove("hidden");
 
+        if (typeof L === "undefined") {
+            infoEl.innerText = "Карта временно недоступна";
+            return;
+        }
+
         setTimeout(async () => {
             if (leafletMap) { leafletMap.remove(); leafletMap = null; }
             leafletMap = L.map("inapp-map", { zoomControl: false }).setView([63.567, 53.683], 13);
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(leafletMap);
+            const tileHost = "https://{s}.tile." + "openstreetmap.org/{z}/{x}/{y}.png";
+            L.tileLayer(tileHost).addTo(leafletMap);
             const myLoc = await getBrowserLocation();
 
             if (driverLat !== null && driverLon !== null) {
@@ -271,7 +274,8 @@
             } else if (targetAddress) {
                 infoEl.innerText = `Поиск: ${targetAddress}...`;
                 try {
-                    const r = await fetch(`https://openstreetmap.org{encodeURIComponent(targetAddress)}`);
+                    const nomUrl = "https://nominatim." + "openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(targetAddress);
+                    const r = await fetch(nomUrl);
                     const res = await r.json();
                     if (!res || !res.length) { infoEl.innerText = `Адрес не найден на карте: ${targetAddress}`; return; }
                     const first = res.at(0);
@@ -282,7 +286,8 @@
 
                     if (myLoc) {
                         L.circleMarker([myLoc.lat, myLoc.lon], { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: 1 }).addTo(leafletMap);
-                        const rr = await fetch(`https://project-osrm.org{myLoc.lon},${myLoc.lat};${destLon},${destLat}?overview=full&geometries=geojson`);
+                        const osrmUrl = "https://router." + "project-osrm.org/route/v1/driving/" + myLoc.lon + "," + myLoc.lat + ";" + destLon + "," + destLat + "?overview=full&geometries=geojson";
+                        const rr = await fetch(osrmUrl);
                         const rd = await rr.json();
                         if (rd.routes && rd.routes.length) {
                             const route0 = rd.routes.at(0);
