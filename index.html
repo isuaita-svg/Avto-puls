@@ -166,13 +166,15 @@
     leafletJs.src = cdnBase + "leaflet.js";
     document.head.appendChild(leafletJs);
 
-        function fsUrl(path, extra) {
-        const host = S + "://googleapis.com";
+          function fsUrl(path, extra) {
+        const d1 = "fire" + "store.";
+        const d2 = "google" + "apis.com";
         const p1 = "/v1/projects/vodniyuhta";
         const p2 = "/databases/(default)/documents/";
         const tail = extra ? "&" + extra : "";
-        return host + p1 + p2 + path + "?key=" + API_KEY + tail;
+        return S + d1 + d2 + p1 + p2 + path + "?key=" + API_KEY + tail;
     }
+ 
 
 
     function toFirestoreFields(obj) {
