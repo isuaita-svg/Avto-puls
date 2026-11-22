@@ -151,7 +151,7 @@
 </div>
 <script>
     const API_KEY = "AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
-    const PAY_WORKER_URL = "https://workers.dev"; // Замените на ссылку вашего Worker после настройки
+    const PAY_WORKER_URL = "https://workers.dev";
 
     const DRIVER_PLANS = [
         { days: 1, label: "1 день", price: 100 },
@@ -159,7 +159,7 @@
         { days: 7, label: "7 дней", price: 450 },
         { days: 30, label: "30 дней", price: 1200 }
     ];
-    let selectedPlan = DRIVER_PLANS;
+    let selectedPlan = DRIVER_PLANS.at(0);
 
     function fsUrl(path, extra) {
         var h = "https://firestore." + "googleapis.com";
@@ -240,12 +240,13 @@
         const toRad = d => d * Math.PI / 180;
         const dLat = toRad(lat2 - lat1);
         const dLon = toRad(lon2 - lon1);
-        const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
         const meters = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
         return meters < 1000 ? `${meters} м от вас` : `${(meters / 1000).toFixed(1)} км от вас`;
     }
 
-    // Встроенная карта Leaflet внутри страницы
     let leafletMap = null;
     async function openInAppMap({ title, targetAddress = "", driverLat = null, driverLon = null }) {
         document.getElementById("map-modal-title").innerText = title;
@@ -264,7 +265,7 @@
                 L.circleMarker([driverLat, driverLon], { radius: 10, color: "#38BDF8", fillColor: "#A855F7", fillOpacity: 1 }).addTo(leafletMap).bindPopup("Автомобиль здесь").openPopup();
                 if (myLoc) {
                     L.circleMarker([myLoc.lat, myLoc.lon], { radius: 7, color: "#10B981", fillColor: "#10B981", fillOpacity: 1 }).addTo(leafletMap);
-                    leafletMap.fitBounds([[driverLat, driverLon], [myLoc.lat, myLoc.lon]], { padding: });
+                    leafletMap.fitBounds([[driverLat, driverLon], [myLoc.lat, myLoc.lon]]);
                 }
                 infoEl.innerText = "Местоположение автомобиля на карте";
             } else if (targetAddress) {
@@ -273,8 +274,9 @@
                     const r = await fetch(`https://openstreetmap.org{encodeURIComponent(targetAddress)}`);
                     const res = await r.json();
                     if (!res || !res.length) { infoEl.innerText = `Адрес не найден на карте: ${targetAddress}`; return; }
-                    const destLat = parseFloat(res.lat);
-                    const destLon = parseFloat(res.lon);
+                    const first = res.at(0);
+                    const destLat = parseFloat(first.lat);
+                    const destLon = parseFloat(first.lon);
                     L.circleMarker([destLat, destLon], { radius: 9, color: "#A855F7", fillColor: "#D946EF", fillOpacity: 0.95 }).addTo(leafletMap);
                     leafletMap.setView([destLat, destLon], 15);
 
@@ -283,11 +285,12 @@
                         const rr = await fetch(`https://project-osrm.org{myLoc.lon},${myLoc.lat};${destLon},${destLat}?overview=full&geometries=geojson`);
                         const rd = await rr.json();
                         if (rd.routes && rd.routes.length) {
-                            const coords = rd.routes.geometry.coordinates.map(c => [c, c]);
+                            const route0 = rd.routes.at(0);
+                            const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
                             const line = L.polyline(coords, { color: "#38BDF8", weight: 5 }).addTo(leafletMap);
-                            leafletMap.fitBounds(line.getBounds(), { padding: });
-                            const km = (rd.routes.distance / 1000).toFixed(1);
-                            const min = Math.max(1, Math.round(rd.routes.duration / 60));
+                            leafletMap.fitBounds(line.getBounds());
+                            const km = (route0.distance / 1000).toFixed(1);
+                            const min = Math.max(1, Math.round(route0.duration / 60));
                             infoEl.innerHTML = `Маршрут: <b style="color:#38BDF8">${km} км</b> • ~${min} мин`;
                         }
                     } else {
@@ -297,7 +300,7 @@
                     infoEl.innerText = "Не удалось построить маршрут";
                 }
             }
-        }, 100);
+        }, 120);
     }
     document.getElementById("close-map-btn").addEventListener("click", () => document.getElementById("map-modal").classList.add("hidden"));
     let step = 0, fromAddr = "", toAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null;
@@ -568,7 +571,6 @@
         updateControls();
     });
 
-    // Правила сервиса
     const rulesModal = document.getElementById("rules-modal");
     if (!localStorage.getItem("autopulse_rules_v1")) rulesModal.classList.remove("hidden");
     document.getElementById("open-rules-btn").addEventListener("click", () => rulesModal.classList.remove("hidden"));
@@ -577,7 +579,6 @@
         rulesModal.classList.add("hidden");
     });
 
-    // Переключение режима Водитель / Пассажир и тарифы подписки
     const pinModal = document.getElementById("pin-modal");
     const pinErr = document.getElementById("pin-error");
 
