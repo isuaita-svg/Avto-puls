@@ -41,7 +41,7 @@
         .modal-content { background: #0B0F22; border: 1.5px solid #A855F7; box-shadow: 0 0 24px rgba(168,85,247,0.35); padding: 18px; border-radius: 20px; width: 100%; max-width: 390px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .modal-content.blue-border { border-color: #38BDF8; box-shadow: 0 0 24px rgba(56,189,248,0.3); }
         .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0; }
-        #inapp-map { width: 100%; height: 340px; border-radius: 14px; border: 1.2px solid #38BDF8; background: #060812; }
+        #inapp-map { width: 100%; height: 340px; border-radius: 14px; border: 1.2px solid #38BDF8; background: #060812; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -49,7 +49,7 @@
 <header>
     <div class="brand-wrap">
         <h1>Авто<span>Пульс</span></h1>
-        <span id="driver-badge" class="badge-driver hidden">ВОДИТЕЛЬ</span>
+        <span id="driver-badge" class="badge-driver hidden">АВТО</span>
     </div>
     <div class="header-actions">
         <button type="button" class="link-btn" id="open-rules-btn">Правила</button>
@@ -98,12 +98,13 @@
 
 <div id="driver-box" class="hidden"></div>
 
-<!-- Окно встроенной карты (Яндекс.Карты виджет) -->
+<!-- Окно встроенной карты с контурами домов и номерами зданий -->
 <div id="map-modal" class="modal hidden">
     <div class="modal-content blue-border">
         <h3 id="map-modal-title" style="color:#38BDF8; font-size:16px;">Навигация АвтоПульс</h3>
-        <iframe id="inapp-map" frameborder="0" allow="geolocation"></iframe>
-        <div id="map-route-info" style="font-size:13px; color:#fff; text-align:center; background:#101630; padding:8px; border-radius:10px; border:1px solid #A855F7;">Маршрут построен</div>
+        <div id="inapp-map"></div>
+        <div id="map-route-info" style="font-size:13px; color:#fff; text-align:center; background:#101630; padding:8px; border-radius:10px; border:1px solid #A855F7;">Загрузка карты Ухты...</div>
+        <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-blue hidden" style="width:100%;">Вести по маршруту (Навигатор)</a>
         <button type="button" class="btn" id="close-map-btn" style="width:100%;">Закрыть карту</button>
     </div>
 </div>
@@ -157,6 +158,17 @@
         { days: 30, label: "30 дней", price: 1200 }
     ];
     let selectedPlan = DRIVER_PLANS.at(0);
+
+    // Динамическое подключение Leaflet с jsDelivr (защищено от обрезки ссылок)
+    const cdnBase = "https://cdn." + "jsdelivr.net/npm/leaflet@1.9.4/dist/";
+    const leafletCss = document.createElement("link");
+    leafletCss.rel = "stylesheet";
+    leafletCss.href = cdnBase + "leaflet.css";
+    document.head.appendChild(leafletCss);
+
+    const leafletJs = document.createElement("script");
+    leafletJs.src = cdnBase + "leaflet.js";
+    document.head.appendChild(leafletJs);
 
     function fsUrl(path, extra) {
         const h = "https://firestore." + "googleapis.com";
@@ -244,26 +256,80 @@
         return meters < 1000 ? `${meters} м от вас` : `${(meters / 1000).toFixed(1)} км от вас`;
     }
 
-    function openInAppMap({ title, targetAddress = "", driverLat = null, driverLon = null }) {
+    let leafletMap = null;
+    async function openInAppMap({ title, targetAddress = "", driverLat = null, driverLon = null }) {
         document.getElementById("map-modal-title").innerText = title;
         const infoEl = document.getElementById("map-route-info");
-        const frame = document.getElementById("inapp-map");
-        const base = "https://yandex." + "ru/map-widget/v1/?";
-
-        if (driverLat !== null && driverLon !== null) {
-            frame.src = `${base}pt=${driverLon},${driverLat},pm2rdm&z=16&l=map`;
-            infoEl.innerText = "Местоположение автомобиля на карте";
-        } else if (targetAddress) {
-            frame.src = `${base}rtext=~${encodeURIComponent(targetAddress)}&rtt=auto`;
-            infoEl.innerText = `Маршрут: ${targetAddress}`;
-        }
+        const navBtn = document.getElementById("ext-nav-btn");
+        infoEl.innerText = "Загрузка карты Ухты...";
+        navBtn.classList.add("hidden");
         document.getElementById("map-modal").classList.remove("hidden");
+
+        if (targetAddress) {
+            navBtn.href = "https://yandex." + "ru/maps/?rtext=~" + encodeURIComponent(targetAddress) + "&rtt=auto";
+            navBtn.classList.remove("hidden");
+        }
+
+        if (typeof L === "undefined") {
+            infoEl.innerText = "Не удалось загрузить карту. Проверьте интернет.";
+            return;
+        }
+
+        setTimeout(async () => {
+            if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+            leafletMap = L.map("inapp-map", { zoomControl: false }).setView([63.567, 53.683], 15);
+            const tiles = "https://tile.openstreetmap." + "de/{z}/{x}/{y}.png";
+            L.tileLayer(tiles, { maxZoom: 19 }).addTo(leafletMap);
+            setTimeout(() => leafletMap.invalidateSize(), 250);
+
+            const myLoc = await getBrowserLocation();
+
+            if (driverLat !== null && driverLon !== null) {
+                leafletMap.setView([driverLat, driverLon], 16);
+                L.circleMarker([driverLat, driverLon], { radius: 10, color: "#38BDF8", fillColor: "#A855F7", fillOpacity: 1 }).addTo(leafletMap).bindPopup("Автомобиль здесь").openPopup();
+                if (myLoc) {
+                    L.circleMarker([myLoc.lat, myLoc.lon], { radius: 7, color: "#10B981", fillColor: "#10B981", fillOpacity: 1 }).addTo(leafletMap);
+                    leafletMap.fitBounds([[driverLat, driverLon], [myLoc.lat, myLoc.lon]]);
+                }
+                infoEl.innerText = "Местоположение автомобиля на карте";
+            } else if (targetAddress) {
+                infoEl.innerText = `Поиск: ${targetAddress}...`;
+                try {
+                    const nom = "https://nominatim." + "openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(targetAddress);
+                    const r = await fetch(nom);
+                    const res = await r.json();
+                    if (!res || !res.length) { infoEl.innerText = `Точка не найдена: ${targetAddress}`; return; }
+                    const first = res.at(0);
+                    const destLat = parseFloat(first.lat);
+                    const destLon = parseFloat(first.lon);
+                    L.circleMarker([destLat, destLon], { radius: 9, color: "#A855F7", fillColor: "#D946EF", fillOpacity: 0.95 }).addTo(leafletMap);
+                    leafletMap.setView([destLat, destLon], 16);
+
+                    if (myLoc) {
+                        L.circleMarker([myLoc.lat, myLoc.lon], { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: 1 }).addTo(leafletMap);
+                        const osrm = "https://router." + "project-osrm.org/route/v1/driving/" + myLoc.lon + "," + myLoc.lat + ";" + destLon + "," + destLat + "?overview=full&geometries=geojson";
+                        const rr = await fetch(osrm);
+                        const rd = await rr.json();
+                        if (rd.routes && rd.routes.length) {
+                            const route0 = rd.routes.at(0);
+                            const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
+                            const line = L.polyline(coords, { color: "#1D4ED8", weight: 6 }).addTo(leafletMap);
+                            leafletMap.fitBounds(line.getBounds());
+                            const km = (route0.distance / 1000).toFixed(1);
+                            const min = Math.max(1, Math.round(route0.duration / 60));
+                            infoEl.innerHTML = `Маршрут: <b style="color:#38BDF8">${km} км</b> • ~${min} мин`;
+                        }
+                    } else {
+                        infoEl.innerText = "Адрес отмечен на карте Ухты";
+                    }
+                } catch (_) {
+                    infoEl.innerText = "Адрес отмечен на карте";
+                }
+            }
+        }, 120);
     }
 
-    document.getElementById("close-map-btn").addEventListener("click", () => {
-        document.getElementById("map-modal").classList.add("hidden");
-        document.getElementById("inapp-map").src = "about:blank";
-    });
+    document.getElementById("close-map-btn").addEventListener("click", () => document.getElementById("map-modal").classList.add("hidden"));
     let step = 0, fromAddr = "", toAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null;
     let isDriver = false, isRegisterMode = false, pollTimer = null, gpsTimer = null;
     let lastDriverLat = null, lastDriverLon = null;
