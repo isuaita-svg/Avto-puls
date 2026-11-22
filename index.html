@@ -97,7 +97,6 @@
 </div>
 
 <div id="driver-box" class="hidden"></div>
-
 <div id="map-modal" class="modal hidden">
     <div class="modal-content blue-border">
         <h3 id="map-modal-title" style="color:#38BDF8; font-size:16px;">Навигация АвтоПульс</h3>
@@ -145,8 +144,9 @@
     </div>
 </div>
 <script>
+    const S = "https:" + "//";
     const API_KEY = "AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
-    const PAY_WORKER_URL = "https://" + "avtoplus-robokassa.workers.dev/pay";
+    const PAY_WORKER_URL = S + "avtoplus-robokassa.workers.dev/pay";
 
     const DRIVER_PLANS = [
         { days: 1, label: "1 день", price: 100 },
@@ -156,7 +156,7 @@
     ];
     let selectedPlan = DRIVER_PLANS.at(0);
 
-    const cdnBase = "https://cdn." + "jsdelivr.net/npm/leaflet@1.9.4/dist/";
+    const cdnBase = S + "cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/";
     const leafletCss = document.createElement("link");
     leafletCss.rel = "stylesheet";
     leafletCss.href = cdnBase + "leaflet.css";
@@ -167,9 +167,8 @@
     document.head.appendChild(leafletJs);
 
     function fsUrl(path, extra) {
-        const h = "https://firestore." + "googleapis.com";
-        const p = "/v1/projects/vodniyuhta/databases/(default)/documents/";
-        return h + p + path + "?key=" + API_KEY + (extra ? "&" + extra : "");
+        const base = S + "://googleapis.com";
+        return base + path + "?key=" + API_KEY + (extra ? "&" + extra : "");
     }
 
     function toFirestoreFields(obj) {
@@ -228,7 +227,6 @@
     async function fsDelete(path) {
         await fetch(fsUrl(path), { method: "DELETE" });
     }
-
     function getBrowserLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) return resolve(null);
@@ -285,7 +283,7 @@
         }
 
         if (targetAddress) {
-            navBtn.href = "https://yandex." + "ru/maps/?rtext=~" + encodeURIComponent(targetAddress) + "&rtt=auto";
+            navBtn.href = S + "yandex.ru/maps/?rtext=~" + encodeURIComponent(targetAddress) + "&rtt=auto";
             navBtn.classList.remove("hidden");
         }
 
@@ -297,7 +295,7 @@
         setTimeout(async () => {
             if (leafletMap) { leafletMap.remove(); leafletMap = null; }
             leafletMap = L.map("inapp-map", { zoomControl: false }).setView([63.567, 53.683], 15);
-            const tiles = "https://tile.openstreetmap." + "de/{z}/{x}/{y}.png";
+            const tiles = S + "tile.openstreetmap.de/{z}/{x}/{y}.png";
             L.tileLayer(tiles, { maxZoom: 19 }).addTo(leafletMap);
             setTimeout(() => leafletMap.invalidateSize(), 250);
 
@@ -315,7 +313,7 @@
                 const updateDriverRoute = async (lat, lon) => {
                     carMarker.setLatLng([lat, lon]);
                     if (myLoc) {
-                        const osrm = "https://router." + "project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + myLoc.lon + "," + myLoc.lat + "?overview=full&geometries=geojson";
+                        const osrm = S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + myLoc.lon + "," + myLoc.lat + "?overview=full&geometries=geojson";
                         const rr = await fetch(osrm);
                         const rd = await rr.json();
                         if (rd.routes && rd.routes.length) {
@@ -353,7 +351,7 @@
             } else if (targetAddress) {
                 infoEl.innerText = `Поиск: ${targetAddress}...`;
                 try {
-                    const nom = "https://nominatim." + "openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(targetAddress);
+                    const nom = S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(targetAddress);
                     const r = await fetch(nom);
                     const res = await r.json();
                     if (!res || !res.length) { infoEl.innerText = `Точка не найдена: ${targetAddress}`; return; }
@@ -362,50 +360,54 @@
                     const destLon = parseFloat(first.lon);
                     L.circleMarker([destLat, destLon], { radius: 9, color: "#A855F7", fillColor: "#D946EF", fillOpacity: 0.95 }).addTo(leafletMap);
                     leafletMap.setView([destLat, destLon], 16);
-let driverDot = null;
-let driverLine = null;
-let firstDriverFit = true;
-const drawToDest = async (curLat, curLon) => {
-if (!driverDot) {
-driverDot = L.circleMarker([curLat, curLon], { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: 1 }).addTo(leafletMap);
-} else {
-driverDot.setLatLng([curLat, curLon]);
-}
-const osrm = "https://router." + "project-osrm.org/route/v1/driving/" + curLon + "," + curLat + ";" + destLon + "," + destLat + "?overview=full&geometries=geojson";
-const rr = await fetch(osrm);
-const rd = await rr.json();
-if (rd.routes && rd.routes.length) {
-const route0 = rd.routes.at(0);
-const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
-if (driverLine) leafletMap.removeLayer(driverLine);
-driverLine = L.polyline(coords, { color: "#1D4ED8", weight: 6 }).addTo(leafletMap);
-firstDriverFit = applySmartZoom(leafletMap, route0.distance, destLat, destLon, driverLine.getBounds(), firstDriverFit);
-const km = (route0.distance / 1000).toFixed(1);
-const min = Math.max(1, Math.round(route0.duration / 60));
-infoEl.innerHTML = Маршрут: <b style="color:#38BDF8">${km} км</b> • ~${min} мин;
-}
-};
-if (myLoc) await drawToDest(myLoc.lat, myLoc.lon);
-else infoEl.innerText = "Адрес отмечен на карте Ухты";
-if (navigator.geolocation) {
-mapGeoWatchId = navigator.geolocation.watchPosition(
-(pos) => drawToDest(pos.coords.latitude, pos.coords.longitude),
-() => {},
-{ enableHighAccuracy: true, maximumAge: 3000 }
-);
-}
-} catch (_) {
-infoEl.innerText = "Адрес отмечен на карте";
-}
-}
-}, 120);
-}
-document.getElementById("close-map-btn").addEventListener("click", () => {
-if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
-if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
-document.getElementById("map-modal").classList.add("hidden");
-});
-```html
+
+                    let driverDot = null;
+                    let driverLine = null;
+                    let firstDriverFit = true;
+
+                    const drawToDest = async (curLat, curLon) => {
+                        if (!driverDot) {
+                            driverDot = L.circleMarker([curLat, curLon], { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: 1 }).addTo(leafletMap);
+                        } else {
+                            driverDot.setLatLng([curLat, curLon]);
+                        }
+                        const osrm = S + "router.project-osrm.org/route/v1/driving/" + curLon + "," + curLat + ";" + destLon + "," + destLat + "?overview=full&geometries=geojson";
+                        const rr = await fetch(osrm);
+                        const rd = await rr.json();
+                        if (rd.routes && rd.routes.length) {
+                            const route0 = rd.routes.at(0);
+                            const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
+                            if (driverLine) leafletMap.removeLayer(driverLine);
+                            driverLine = L.polyline(coords, { color: "#1D4ED8", weight: 6 }).addTo(leafletMap);
+                            firstDriverFit = applySmartZoom(leafletMap, route0.distance, destLat, destLon, driverLine.getBounds(), firstDriverFit);
+                            const km = (route0.distance / 1000).toFixed(1);
+                            const min = Math.max(1, Math.round(route0.duration / 60));
+                            infoEl.innerHTML = `Маршрут: <b style="color:#38BDF8">${km} км</b> • ~${min} мин`;
+                        }
+                    };
+
+                    if (myLoc) await drawToDest(myLoc.lat, myLoc.lon);
+                    else infoEl.innerText = "Адрес отмечен на карте Ухты";
+
+                    if (navigator.geolocation) {
+                        mapGeoWatchId = navigator.geolocation.watchPosition(
+                            (pos) => drawToDest(pos.coords.latitude, pos.coords.longitude),
+                            () => {},
+                            { enableHighAccuracy: true, maximumAge: 3000 }
+                        );
+                    }
+                } catch (_) {
+                    infoEl.innerText = "Адрес отмечен на карте";
+                }
+            }
+        }, 120);
+    }
+
+    document.getElementById("close-map-btn").addEventListener("click", () => {
+        if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
+        if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
+        document.getElementById("map-modal").classList.add("hidden");
+    });
     let step = 0, fromAddr = "", toAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null;
     let isDriver = false, isRegisterMode = false, pollTimer = null, gpsTimer = null;
     let lastDriverLat = null, lastDriverLon = null;
@@ -478,7 +480,6 @@ document.getElementById("map-modal").classList.add("hidden");
         }
         updateControls();
     }
-
     document.getElementById("map-driver-btn").addEventListener("click", () => {
         if (lastDriverLat !== null && lastDriverLon !== null) {
             openInAppMap({ title: "Маршрут водителя к вам", driverLat: lastDriverLat, driverLon: lastDriverLon });
@@ -559,8 +560,8 @@ document.getElementById("map-modal").classList.add("hidden");
         document.getElementById("call-driver-btn").href = `tel:${cleanPhone}`;
         step = 5;
         updateControls();
-    }  
-        function routeToAddress(addr) {
+    }
+    function routeToAddress(addr) {
         openInAppMap({ title: "Навигация АвтоПульс", targetAddress: addr });
     }
 
@@ -822,4 +823,3 @@ document.getElementById("map-modal").classList.add("hidden");
 </script>
 </body>
 </html>
-
