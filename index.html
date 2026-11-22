@@ -98,7 +98,6 @@
 
 <div id="driver-box" class="hidden"></div>
 
-<!-- Окно встроенной карты с живым маршрутом -->
 <div id="map-modal" class="modal hidden">
     <div class="modal-content blue-border">
         <h3 id="map-modal-title" style="color:#38BDF8; font-size:16px;">Навигация АвтоПульс</h3>
@@ -109,7 +108,6 @@
     </div>
 </div>
 
-<!-- Окно Правил и Оферты -->
 <div id="rules-modal" class="modal hidden">
     <div class="modal-content blue-border">
         <h3 style="color:#38BDF8; font-size:17px;">ПРАВИЛА СЕРВИСА АВТОПУЛЬС</h3>
@@ -123,7 +121,6 @@
     </div>
 </div>
 
-<!-- Окно входа и продления подписки водителя -->
 <div id="pin-modal" class="modal hidden">
     <div class="modal-content">
         <h3 id="pin-modal-title" style="color:#D946EF; font-size:18px;">ВХОД ДЛЯ ВОДИТЕЛЯ</h3>
@@ -257,6 +254,21 @@
 
     let leafletMap = null;
     let mapTrackTimer = null;
+    let mapGeoWatchId = null;
+
+    function applySmartZoom(map, distMeters, destLat, destLon, bounds, isFirstFit) {
+        if (distMeters <= 350) {
+            map.setView([destLat, destLon], 18, { animate: true });
+            return false;
+        } else if (distMeters <= 1200) {
+            map.setView([destLat, destLon], 16, { animate: true });
+            return false;
+        } else if (isFirstFit && bounds) {
+            map.fitBounds(bounds);
+            return false;
+        }
+        return isFirstFit;
+    }
 
     async function openInAppMap({ title, targetAddress = "", driverLat = null, driverLon = null }) {
         document.getElementById("map-modal-title").innerText = title;
@@ -267,6 +279,10 @@
         document.getElementById("map-modal").classList.remove("hidden");
 
         if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
+        if (mapGeoWatchId !== null && navigator.geolocation) {
+            navigator.geolocation.clearWatch(mapGeoWatchId);
+            mapGeoWatchId = null;
+        }
 
         if (targetAddress) {
             navBtn.href = "https://yandex." + "ru/maps/?rtext=~" + encodeURIComponent(targetAddress) + "&rtt=auto";
@@ -307,7 +323,7 @@
                             const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
                             if (routeLine) leafletMap.removeLayer(routeLine);
                             routeLine = L.polyline(coords, { color: "#1D4ED8", weight: 6 }).addTo(leafletMap);
-                            if (firstFit) { leafletMap.fitBounds(routeLine.getBounds()); firstFit = false; }
+                            firstFit = applySmartZoom(leafletMap, route0.distance, myLoc.lat, myLoc.lon, routeLine.getBounds(), firstFit);
                             const km = (route0.distance / 1000).toFixed(1);
                             const min = Math.max(1, Math.round(route0.duration / 60));
                             infoEl.innerHTML = `Автомобиль в пути: <b style="color:#38BDF8">${km} км</b> • ~${min} мин`;
@@ -346,23 +362,37 @@
                     const destLon = parseFloat(first.lon);
                     L.circleMarker([destLat, destLon], { radius: 9, color: "#A855F7", fillColor: "#D946EF", fillOpacity: 0.95 }).addTo(leafletMap);
                     leafletMap.setView([destLat, destLon], 16);
-
-                    if (myLoc) {
-                        L.circleMarker([myLoc.lat, myLoc.lon], { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: 1 }).addTo(leafletMap);
-                        const osrm = "https://router." + "project-osrm.org/route/v1/driving/" + myLoc.lon + "," + myLoc.lat + ";" + destLon + "," + destLat + "?overview=full&geometries=geojson";
-                        const rr = await fetch(osrm);
-                        const rd = await rr.json();
-                        if (rd.routes && rd.routes.length) {
-                            const route0 = rd.routes.at(0);
-                            const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
-const line = L.polyline(coords, { color: "#1D4ED8", weight: 6 }).addTo(leafletMap);
-leafletMap.fitBounds(line.getBounds());
+let driverDot = null;
+let driverLine = null;
+let firstDriverFit = true;
+const drawToDest = async (curLat, curLon) => {
+if (!driverDot) {
+driverDot = L.circleMarker([curLat, curLon], { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: 1 }).addTo(leafletMap);
+} else {
+driverDot.setLatLng([curLat, curLon]);
+}
+const osrm = "https://router." + "project-osrm.org/route/v1/driving/" + curLon + "," + curLat + ";" + destLon + "," + destLat + "?overview=full&geometries=geojson";
+const rr = await fetch(osrm);
+const rd = await rr.json();
+if (rd.routes && rd.routes.length) {
+const route0 = rd.routes.at(0);
+const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
+if (driverLine) leafletMap.removeLayer(driverLine);
+driverLine = L.polyline(coords, { color: "#1D4ED8", weight: 6 }).addTo(leafletMap);
+firstDriverFit = applySmartZoom(leafletMap, route0.distance, destLat, destLon, driverLine.getBounds(), firstDriverFit);
 const km = (route0.distance / 1000).toFixed(1);
 const min = Math.max(1, Math.round(route0.duration / 60));
 infoEl.innerHTML = Маршрут: <b style="color:#38BDF8">${km} км</b> • ~${min} мин;
 }
-} else {
-infoEl.innerText = "Адрес отмечен на карте Ухты";
+};
+if (myLoc) await drawToDest(myLoc.lat, myLoc.lon);
+else infoEl.innerText = "Адрес отмечен на карте Ухты";
+if (navigator.geolocation) {
+mapGeoWatchId = navigator.geolocation.watchPosition(
+(pos) => drawToDest(pos.coords.latitude, pos.coords.longitude),
+() => {},
+{ enableHighAccuracy: true, maximumAge: 3000 }
+);
 }
 } catch (_) {
 infoEl.innerText = "Адрес отмечен на карте";
@@ -372,6 +402,7 @@ infoEl.innerText = "Адрес отмечен на карте";
 }
 document.getElementById("close-map-btn").addEventListener("click", () => {
 if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
+if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
 document.getElementById("map-modal").classList.add("hidden");
 });
 ```html
@@ -528,7 +559,7 @@ document.getElementById("map-modal").classList.add("hidden");
         document.getElementById("call-driver-btn").href = `tel:${cleanPhone}`;
         step = 5;
         updateControls();
-    }
+    }  
         function routeToAddress(addr) {
         openInAppMap({ title: "Навигация АвтоПульс", targetAddress: addr });
     }
@@ -791,3 +822,4 @@ document.getElementById("map-modal").classList.add("hidden");
 </script>
 </body>
 </html>
+
