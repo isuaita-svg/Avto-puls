@@ -36,6 +36,7 @@
         .btn-outline-blue { background: #101630; border: 1.5px solid #38BDF8; color: #fff; box-shadow: 0 0 8px rgba(56,189,248,0.25); }
         .card { background-color: #101630; border-radius: 18px; padding: 16px; border: 1.5px solid #A855F7; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 0 14px rgba(168,85,247,0.25); }
         .card.accepted { border-color: #38BDF8; box-shadow: 0 0 14px rgba(56,189,248,0.25); }
+        .status-pill { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 8px; white-space: nowrap; }
         .hidden { display: none !important; }
         .modal { position: fixed; inset: 0; background: rgba(6,8,18,0.9); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
         .modal-content { background: #0B0F22; border: 1.5px solid #A855F7; box-shadow: 0 0 24px rgba(168,85,247,0.35); padding: 18px; border-radius: 20px; width: 100%; max-width: 390px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
@@ -88,6 +89,12 @@
         </div>
         <button type="button" id="map-driver-btn" class="btn btn-blue hidden" style="padding:8px 12px; font-size:13px;">На карте</button>
     </div>
+    <div id="arrived-card" class="hidden" style="background:#101630; border:1.5px solid #10B981; border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+        <div style="color:#10B981; font-weight:800; font-size:16px;">Водитель на месте!</div>
+        <div id="wait-timer-text" style="color:#38BDF8; font-weight:700; font-size:15px;">Бесплатное ожидание: 03:00</div>
+        <button type="button" id="coming-out-btn" class="btn btn-green" style="width:100%;">Выхожу</button>
+        <div id="coming-out-ack" class="hidden" style="color:#ccc; font-size:13px;">Водитель предупреждён, что вы выходите</div>
+    </div>
     <a id="call-driver-btn" href="#" class="btn btn-green hidden" style="width: 100%;">Позвонить водителю</a>
     <button type="button" class="btn btn-outline-purple" id="cancel-order-btn" style="width: 100%;">Отменить заявку</button>
 </div>
@@ -99,9 +106,9 @@
 <div id="driver-box" class="hidden"></div>
 <div id="map-modal" class="modal hidden">
     <div class="modal-content blue-border">
-        <h3 id="map-modal-title" style="color:#38BDF8; font-size:16px;">Навигация АвтоПульс</h3>
+        <h3 id="map-modal-title" style="color:#38BDF8; font-size:16px;">3D-Навигация АвтоПульс</h3>
         <div id="inapp-map"></div>
-        <div id="map-route-info" style="font-size:13px; color:#fff; text-align:center; background:#101630; padding:8px; border-radius:10px; border:1px solid #A855F7;">Загрузка карты Ухты...</div>
+        <div id="map-route-info" style="font-size:13px; color:#fff; text-align:center; background:#101630; padding:8px; border-radius:10px; border:1px solid #A855F7;">Загрузка 3D-карты Ухты...</div>
         <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-blue hidden" style="width:100%;">Вести по маршруту (Навигатор)</a>
         <button type="button" class="btn" id="close-map-btn" style="width:100%;">Закрыть карту</button>
     </div>
@@ -156,17 +163,17 @@
     ];
     let selectedPlan = DRIVER_PLANS.at(0);
 
-    const cdnBase = S + "cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/";
-    const leafletCss = document.createElement("link");
-    leafletCss.rel = "stylesheet";
-    leafletCss.href = cdnBase + "leaflet.css";
-    document.head.appendChild(leafletCss);
+    const cdnBase = S + "cdn." + "jsdelivr.net/npm/maplibre-gl@4.7.1/dist/";
+    const mlCss = document.createElement("link");
+    mlCss.rel = "stylesheet";
+    mlCss.href = cdnBase + "maplibre-gl.css";
+    document.head.appendChild(mlCss);
 
-    const leafletJs = document.createElement("script");
-    leafletJs.src = cdnBase + "leaflet.js";
-    document.head.appendChild(leafletJs);
+    const mlJs = document.createElement("script");
+    mlJs.src = cdnBase + "maplibre-gl.js";
+    document.head.appendChild(mlJs);
 
-          function fsUrl(path, extra) {
+    function fsUrl(path, extra) {
         const d1 = "fire" + "store.";
         const d2 = "google" + "apis.com";
         const p1 = "/v1/projects/vodniyuhta";
@@ -174,8 +181,6 @@
         const tail = extra ? "&" + extra : "";
         return S + d1 + d2 + p1 + p2 + path + "?key=" + API_KEY + tail;
     }
- 
-
 
     function toFirestoreFields(obj) {
         const fields = {};
@@ -233,6 +238,34 @@
     async function fsDelete(path) {
         await fetch(fsUrl(path), { method: "DELETE" });
     }
+
+    let cachedHouses = [];
+    let lastHouseKey = "";
+    async function loadUkhtaHousesWeb(lat = 63.567, lon = 53.683) {
+        const key = lat.toFixed(2) + "_" + lon.toFixed(2);
+        if (cachedHouses.length && lastHouseKey === key) return cachedHouses;
+        const q = `[out:json][timeout:10];(node["addr:housenumber"](around:1400,${lat},${lon});way["addr:housenumber"](around:1400,${lat},${lon}););out center 350;`;
+        const urls = [
+            S + "maps.mail.ru/osm/tools/overpass/api/interpreter?data=" + encodeURIComponent(q),
+            S + "overpass.kumi.systems/api/interpreter?data=" + encodeURIComponent(q)
+        ];
+        for (const u of urls) {
+            try {
+                const r = await fetch(u);
+                if (!r.ok) continue;
+                const d = await r.json();
+                const list = [];
+                (d.elements || []).forEach(el => {
+                    const num = el.tags && el.tags["addr:housenumber"];
+                    const hLat = (el.center && el.center.lat) || el.lat;
+                    const hLon = (el.center && el.center.lon) || el.lon;
+                    if (num && hLat && hLon) list.push({ lat: hLat, lon: hLon, n: String(num) });
+                });
+                if (list.length) { cachedHouses = list; lastHouseKey = key; break; }
+            } catch (_) {}
+        }
+        return cachedHouses;
+    }
     function getBrowserLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) return resolve(null);
@@ -244,7 +277,7 @@
         });
     }
 
-    function calcDistanceText(lat1, lon1, lat2, lon2) {
+    function calcDistanceMeters(lat1, lon1, lat2, lon2) {
         const R = 6371000;
         const toRad = d => d * Math.PI / 180;
         const dLat = toRad(lat2 - lat1);
@@ -252,33 +285,24 @@
         const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
                   Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const meters = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-        return meters < 1000 ? `${meters} м от вас` : `${(meters / 1000).toFixed(1)} км от вас`;
+        return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
-    let leafletMap = null;
+    function calcDistanceText(lat1, lon1, lat2, lon2) {
+        const m = calcDistanceMeters(lat1, lon1, lat2, lon2);
+        if (m > 100000) return "В пути (Ухта)";
+        return m < 1000 ? `${m} м от вас` : `${(m / 1000).toFixed(1)} км от вас`;
+    }
+
+    let map3d = null;
     let mapTrackTimer = null;
     let mapGeoWatchId = null;
 
-    function applySmartZoom(map, distMeters, destLat, destLon, bounds, isFirstFit) {
-        if (distMeters <= 350) {
-            map.setView([destLat, destLon], 18, { animate: true });
-            return false;
-        } else if (distMeters <= 1200) {
-            map.setView([destLat, destLon], 16, { animate: true });
-            return false;
-        } else if (isFirstFit && bounds) {
-            map.fitBounds(bounds);
-            return false;
-        }
-        return isFirstFit;
-    }
-
-    async function openInAppMap({ title, targetAddress = "", driverLat = null, driverLon = null }) {
+    async function openInAppMap({ title, pointA = "", pointB = "", orderStatus = "accepted", driverLat = null, driverLon = null, clientLat = null, clientLon = null }) {
         document.getElementById("map-modal-title").innerText = title;
         const infoEl = document.getElementById("map-route-info");
         const navBtn = document.getElementById("ext-nav-btn");
-        infoEl.innerText = "Загрузка карты Ухты...";
+        infoEl.innerText = "Загрузка 3D-маршрута...";
         navBtn.classList.add("hidden");
         document.getElementById("map-modal").classList.remove("hidden");
 
@@ -288,135 +312,196 @@
             mapGeoWatchId = null;
         }
 
-        if (targetAddress) {
-            navBtn.href = S + "yandex.ru/maps/?rtext=~" + encodeURIComponent(targetAddress) + "&rtt=auto";
+        const nextTarget = (orderStatus === "arrived" && pointB) ? pointB : (pointA || pointB);
+        if (nextTarget) {
+            navBtn.innerText = (orderStatus === "arrived" && pointB) ? "Навигатор до Пункта Б" : "Навигатор до Пункта А";
+            navBtn.href = S + "yandex.ru/maps/?rtext=~" + encodeURIComponent(nextTarget) + "&rtt=auto";
             navBtn.classList.remove("hidden");
         }
 
-        if (typeof L === "undefined") {
-            infoEl.innerText = "Не удалось загрузить карту. Проверьте интернет.";
+        if (typeof maplibregl === "undefined") {
+            infoEl.innerText = "Не удалось загрузить 3D-карту. Проверьте интернет.";
             return;
         }
 
         setTimeout(async () => {
-            if (leafletMap) { leafletMap.remove(); leafletMap = null; }
-            leafletMap = L.map("inapp-map", { zoomControl: false }).setView([63.567, 53.683], 15);
-            const tiles = S + "tile.openstreetmap.de/{z}/{x}/{y}.png";
-            L.tileLayer(tiles, { maxZoom: 19 }).addTo(leafletMap);
-            setTimeout(() => leafletMap.invalidateSize(), 250);
+            if (map3d) { map3d.remove(); map3d = null; }
+            map3d = new maplibregl.Map({
+                container: "inapp-map",
+                style: S + "tiles.openfreemap.org/styles/dark",
+                center: [53.683, 63.567],
+                zoom: 16,
+                pitch: 60,
+                bearing: -20,
+                attributionControl: false,
+                antialias: true
+            });
 
             const myLoc = await getBrowserLocation();
+            const initLat = clientLat || (myLoc && myLoc.lat) || null;
+            const initLon = clientLon || (myLoc && myLoc.lon) || null;
+            const houses = await loadUkhtaHousesWeb(driverLat || initLat || 63.567, driverLon || initLon || 53.683);
 
-            if (driverLat !== null && driverLon !== null) {
-                let carMarker = L.circleMarker([driverLat, driverLon], { radius: 10, color: "#38BDF8", fillColor: "#A855F7", fillOpacity: 1 }).addTo(leafletMap).bindPopup("Автомобиль");
-                let routeLine = null;
-                let firstFit = true;
-
-                if (myLoc) {
-                    L.circleMarker([myLoc.lat, myLoc.lon], { radius: 8, color: "#10B981", fillColor: "#10B981", fillOpacity: 1 }).addTo(leafletMap).bindPopup("Вы здесь");
-                }
-
-                const updateDriverRoute = async (lat, lon) => {
-                    carMarker.setLatLng([lat, lon]);
-                    if (myLoc) {
-                        const osrm = S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + myLoc.lon + "," + myLoc.lat + "?overview=full&geometries=geojson";
-                        const rr = await fetch(osrm);
-                        const rd = await rr.json();
-                        if (rd.routes && rd.routes.length) {
-                            const route0 = rd.routes.at(0);
-                            const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
-                            if (routeLine) leafletMap.removeLayer(routeLine);
-                            routeLine = L.polyline(coords, { color: "#1D4ED8", weight: 6 }).addTo(leafletMap);
-                            firstFit = applySmartZoom(leafletMap, route0.distance, myLoc.lat, myLoc.lon, routeLine.getBounds(), firstFit);
-                            const km = (route0.distance / 1000).toFixed(1);
-                            const min = Math.max(1, Math.round(route0.duration / 60));
-                            infoEl.innerHTML = `Автомобиль в пути: <b style="color:#38BDF8">${km} км</b> • ~${min} мин`;
-                        }
-                    } else {
-                        if (firstFit) { leafletMap.setView([lat, lon], 16); firstFit = false; }
-                        infoEl.innerText = "Местоположение автомобиля на карте";
+            let numMarkers = [];
+            function renderHouseNums() {
+                numMarkers.forEach(m => m.remove());
+                numMarkers = [];
+                if (map3d.getZoom() < 15.2 || !houses.length) return;
+                const b = map3d.getBounds();
+                houses.forEach(h => {
+                    if (h.lat >= b.getSouth() && h.lat <= b.getNorth() && h.lon >= b.getWest() && h.lon <= b.getEast()) {
+                        const d = document.createElement("div");
+                        d.innerText = h.n;
+                        d.style.cssText = "color:#fff;background:rgba(11,15,34,0.88);border:1px solid #A855F7;border-radius:4px;padding:1px 5px;font:bold 11px sans-serif;pointer-events:none;box-shadow:0 0 6px rgba(168,85,247,0.7);";
+                        numMarkers.push(new maplibregl.Marker({ element: d }).setLngLat([h.lon, h.lat]).addTo(map3d));
                     }
-                };
+                });
+            }
 
-                await updateDriverRoute(driverLat, driverLon);
+            function makeBadge(label, bg, border) {
+                const el = document.createElement("div");
+                el.innerText = label;
+                el.style.cssText = "min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:" + bg + ";color:#fff;font:bold 11px/18px sans-serif;text-align:center;border:2px solid " + border + ";box-shadow:0 0 12px " + bg + ";";
+                return el;
+            }
 
-                if (currentOrderId) {
-                    mapTrackTimer = setInterval(async () => {
-                        if (document.getElementById("map-modal").classList.contains("hidden")) {
-                            clearInterval(mapTrackTimer);
-                            return;
-                        }
-                        const ord = await fsGet(`orders/${currentOrderId}`);
-                        if (ord) {
-                            const nLat = parseFloat(ord.driverLat);
-                            const nLon = parseFloat(ord.driverLon);
-                            if (!isNaN(nLat) && !isNaN(nLon)) await updateDriverRoute(nLat, nLon);
-                        }
-                    }, 4000);
-                }
-            } else if (targetAddress) {
-                infoEl.innerText = `Поиск: ${targetAddress}...`;
-                try {
-                    const nom = S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(targetAddress);
-                    const r = await fetch(nom);
-                    const res = await r.json();
-                    if (!res || !res.length) { infoEl.innerText = `Точка не найдена: ${targetAddress}`; return; }
-                    const first = res.at(0);
-                    const destLat = parseFloat(first.lat);
-                    const destLon = parseFloat(first.lon);
-                    L.circleMarker([destLat, destLon], { radius: 9, color: "#A855F7", fillColor: "#D946EF", fillOpacity: 0.95 }).addTo(leafletMap);
-                    leafletMap.setView([destLat, destLon], 16);
-
-                    let driverDot = null;
-                    let driverLine = null;
-                    let firstDriverFit = true;
-
-                    const drawToDest = async (curLat, curLon) => {
-                        if (!driverDot) {
-                            driverDot = L.circleMarker([curLat, curLon], { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: 1 }).addTo(leafletMap);
-                        } else {
-                            driverDot.setLatLng([curLat, curLon]);
-                        }
-                        const osrm = S + "router.project-osrm.org/route/v1/driving/" + curLon + "," + curLat + ";" + destLon + "," + destLat + "?overview=full&geometries=geojson";
-                        const rr = await fetch(osrm);
-                        const rd = await rr.json();
-                        if (rd.routes && rd.routes.length) {
-                            const route0 = rd.routes.at(0);
-                            const coords = route0.geometry.coordinates.map(c => [c.at(1), c.at(0)]);
-                            if (driverLine) leafletMap.removeLayer(driverLine);
-                            driverLine = L.polyline(coords, { color: "#1D4ED8", weight: 6 }).addTo(leafletMap);
-                            firstDriverFit = applySmartZoom(leafletMap, route0.distance, destLat, destLon, driverLine.getBounds(), firstDriverFit);
-                            const km = (route0.distance / 1000).toFixed(1);
-                            const min = Math.max(1, Math.round(route0.duration / 60));
-                                                       infoEl.innerHTML = "Маршрут: <b style='color:#38BDF8'>" + km + " км</b> • ~" + min + " мин"; 
-                        }
-                    };
-
-                    if (myLoc) await drawToDest(myLoc.lat, myLoc.lon);
-                    else infoEl.innerText = "Адрес отмечен на карте Ухты";
-
-                    if (navigator.geolocation) {
-                        mapGeoWatchId = navigator.geolocation.watchPosition(
-                            (pos) => drawToDest(pos.coords.latitude, pos.coords.longitude),
-                            () => {},
-                            { enableHighAccuracy: true, maximumAge: 3000 }
-                        );
-                    }
-                } catch (_) {
-                    infoEl.innerText = "Адрес отмечен на карте";
+            function setLine(id, color, coords) {
+                const data = { type: "Feature", geometry: { type: "LineString", coordinates: coords } };
+                if (map3d.getSource(id)) map3d.getSource(id).setData(data);
+                else {
+                    map3d.addSource(id, { type: "geojson", data: data });
+                    map3d.addLayer({ id: id, type: "line", source: id, layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": color, "line-width": 6 } });
                 }
             }
-        }, 120);
-    }
 
-    document.getElementById("close-map-btn").addEventListener("click", () => {
-        if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
-        if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
-        document.getElementById("map-modal").classList.add("hidden");
-    });
+            let firstFit = true;
+            function smartZoom(dist, destLon, destLat, coords) {
+                if (dist <= 350) { map3d.easeTo({ center: [destLon, destLat], zoom: 18, pitch: 62, duration: 900 }); firstFit = false; }
+                else if (dist <= 1200) { map3d.easeTo({ center: [destLon, destLat], zoom: 16.5, pitch: 58, duration: 900 }); firstFit = false; }
+                else if (firstFit && coords.length) {
+                    const b = coords.reduce((acc, c) => acc.extend(c), new maplibregl.LngLatBounds(coords.at(0), coords.at(0)));
+                    map3d.fitBounds(b, { padding: 45, pitch: 55 });
+                    firstFit = false;
+                }
+            }
+
+            async function geocode(q) {
+                const r = await fetch(S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q));
+                const res = await r.json();
+                if (!res || !res.length) return null;
+                return { lat: parseFloat(res.at(0).lat), lon: parseFloat(res.at(0).lon) };
+            }
+
+            map3d.on("load", async () => {
+                try {
+                    map3d.setLight({ anchor: "viewport", color: "#FFFFFF", intensity: 0.9 });
+                    const st = map3d.getStyle();
+                    let bldSource = "openmaptiles";
+                    st.layers.forEach(l => {
+                        try {
+                            if (l["source-layer"] === "building" && l.source) bldSource = l.source;
+                            if (l.type === "background") map3d.setPaintProperty(l.id, "background-color", "#0B112B");
+                            else if (l.type === "line" && l.id.includes("road")) map3d.setPaintProperty(l.id, "line-color", "#5B7CFA");
+                            else if (l.type === "symbol") map3d.setPaintProperty(l.id, "text-color", "#FFFFFF");
+                        } catch (_) {}
+                    });
+                    map3d.addLayer({
+                        id: "3d-buildings-extrude",
+                        source: bldSource,
+                        "source-layer": "building",
+                        type: "fill-extrusion",
+                        minzoom: 13,
+                        paint: {
+                            "fill-extrusion-color": "#4361EE",
+                            "fill-extrusion-height": ["*", ["coalesce", ["get", "render_height"], 12], 1.4],
+                            "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+                            "fill-extrusion-vertical-gradient": true,
+                            "fill-extrusion-opacity": 0.92
+                        }
+                    });
+                } catch (_) {}
+
+                renderHouseNums();
+                map3d.on("moveend", renderHouseNums);
+
+                let carMarker = null;
+                if (pointA && pointB) {
+                    const ptA = (initLat && initLon) ? { lat: initLat, lon: initLon } : await geocode(pointA);
+                    const ptB = await geocode(pointB);
+                    if (ptA) new maplibregl.Marker({ element: makeBadge("А", "#38BDF8", "#0B0F22") }).setLngLat([ptA.lon, ptA.lat]).addTo(map3d);
+                    if (ptB) new maplibregl.Marker({ element: makeBadge("Б", "#D946EF", "#ffffff") }).setLngLat([ptB.lon, ptB.lat]).addTo(map3d);
+
+                    if (ptA && ptB) {
+                        const rAB = await fetch(S + "router.project-osrm.org/route/v1/driving/" + ptA.lon + "," + ptA.lat + ";" + ptB.lon + "," + ptB.lat + "?overview=full&geometries=geojson").then(r => r.json());
+                        if (rAB.routes && rAB.routes.length) setLine("route-ab", "#A855F7", rAB.routes.at(0).geometry.coordinates);
+                    }
+
+                    const updateNav = async (curLat, curLon) => {
+                        if (!carMarker) carMarker = new maplibregl.Marker({ element: makeBadge("АВТО", "#10B981", "#ffffff") }).setLngLat([curLon, curLat]).addTo(map3d);
+                        else carMarker.setLngLat([curLon, curLat]);
+
+                        const target = (orderStatus === "arrived" && ptB) ? ptB : (ptA || ptB);
+                        const label = (orderStatus === "arrived") ? "До точки Б" : "До точки А";
+                        if (target) {
+                            const r1 = await fetch(S + "router.project-osrm.org/route/v1/driving/" + curLon + "," + curLat + ";" + target.lon + "," + target.lat + "?overview=full&geometries=geojson").then(r => r.json());
+                            if (r1.routes && r1.routes.length) {
+                                const r0 = r1.routes.at(0);
+setLine("route-cur", "#38BDF8", r0.geometry.coordinates);
+smartZoom(r0.distance, target.lon, target.lat, r0.geometry.coordinates);
+const km = (r0.distance / 1000).toFixed(1), min = Math.max(1, Math.round(r0.duration / 60));
+infoEl.innerHTML = label + ": " + km + " км • ~" + min + " мин";
+}
+}
+};
+if (myLoc) await updateNav(myLoc.lat, myLoc.lon);
+else if (ptA) map3d.easeTo({ center: [ptA.lon, ptA.lat], zoom: 16, pitch: 60 });
+if (navigator.geolocation) {
+mapGeoWatchId = navigator.geolocation.watchPosition(
+pos => updateNav(pos.coords.latitude, pos.coords.longitude),
+() => {},
+{ enableHighAccuracy: true, maximumAge: 2500 }
+);
+}
+} else if (driverLat !== null && driverLon !== null) {
+if (initLat && initLon) new maplibregl.Marker({ element: makeBadge("Я", "#10B981", "#ffffff") }).setLngLat([initLon, initLat]).addTo(map3d);
+const drawCar = async (lat, lon) => {
+if (!carMarker) carMarker = new maplibregl.Marker({ element: makeBadge("АВТО", "#A855F7", "#38BDF8") }).setLngLat([lon, lat]).addTo(map3d);
+else carMarker.setLngLat([lon, lat]);
+if (initLat && initLon) {
+const rd = await fetch(S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + initLon + "," + initLat + "?overview=full&geometries=geojson").then(r => r.json());
+if (rd.routes && rd.routes.length) {
+const r0 = rd.routes.at(0);
+setLine("route-cur", "#38BDF8", r0.geometry.coordinates);
+smartZoom(r0.distance, initLon, initLat, r0.geometry.coordinates);
+if (r0.distance > 100000) infoEl.innerHTML = "Автомобиль в пути • Ухта";
+else infoEl.innerHTML = "Автомобиль в пути: " + (r0.distance / 1000).toFixed(1) + " км • ~" + Math.max(1, Math.round(r0.duration / 60)) + " мин";
+}
+}
+};
+await drawCar(driverLat, driverLon);
+if (currentOrderId) {
+mapTrackTimer = setInterval(async () => {
+if (document.getElementById("map-modal").classList.contains("hidden")) { clearInterval(mapTrackTimer); return; }
+const ord = await fsGet("orders/" + currentOrderId);
+if (ord) {
+const nLat = parseFloat(ord.driverLat), nLon = parseFloat(ord.driverLon);
+if (!isNaN(nLat) && !isNaN(nLon)) await drawCar(nLat, nLon);
+}
+}, 4000);
+}
+}
+});
+}, 120);
+}
+document.getElementById("close-map-btn").addEventListener("click", () => {
+if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
+if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
+document.getElementById("map-modal").classList.add("hidden");
+});
+ ```html
     let step = 0, fromAddr = "", toAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null;
-    let isDriver = false, isRegisterMode = false, pollTimer = null, gpsTimer = null;
-    let lastDriverLat = null, lastDriverLon = null;
+    let isDriver = false, isRegisterMode = false, pollTimer = null, gpsTimer = null, waitTimer = null;
+    let lastDriverLat = null, lastDriverLon = null, orderStatus = "searching", arrivedAt = 0, clientComing = "", arrivedNotified = false;
 
     const chatBox = document.getElementById("chat-box");
     const chatInput = document.getElementById("chat-input");
@@ -433,7 +518,10 @@
         document.getElementById("passenger-controls").classList.toggle("hidden", step >= 3);
         document.getElementById("active-controls").classList.toggle("hidden", step !== 3 && step !== 5);
         document.getElementById("call-driver-btn").classList.toggle("hidden", !(step === 5 && selectedDriverPhone));
-        document.getElementById("driver-track-card").classList.toggle("hidden", step !== 5);
+        document.getElementById("driver-track-card").classList.toggle("hidden", !(step === 5 && orderStatus !== "arrived"));
+        document.getElementById("arrived-card").classList.toggle("hidden", !(step === 5 && orderStatus === "arrived"));
+        document.getElementById("coming-out-btn").classList.toggle("hidden", clientComing === "yes");
+        document.getElementById("coming-out-ack").classList.toggle("hidden", clientComing !== "yes");
         document.getElementById("new-order-controls").classList.toggle("hidden", step !== 6);
         if (step !== 3) document.getElementById("offers-container").classList.add("hidden");
 
@@ -445,12 +533,47 @@
     function stopTimers() {
         if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         if (gpsTimer) { clearInterval(gpsTimer); gpsTimer = null; }
+        if (waitTimer) { clearInterval(waitTimer); waitTimer = null; }
     }
+
+    function startWaitCountdown() {
+        if (waitTimer) return;
+        const tick = () => {
+            if (orderStatus !== "arrived") { clearInterval(waitTimer); waitTimer = null; return; }
+            const startMs = arrivedAt > 0 ? arrivedAt : Date.now();
+            const elapsed = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+            const left = Math.max(0, 180 - elapsed);
+            const el = document.getElementById("wait-timer-text");
+            if (left > 0) {
+                const mm = String(Math.floor(left / 60)).padStart(2, "0");
+                const ss = String(left % 60).padStart(2, "0");
+                el.style.color = "#38BDF8";
+                el.innerText = `Бесплатное ожидание: ${mm}:${ss}`;
+            } else {
+                const paid = elapsed - 180;
+                const mm = String(Math.floor(paid / 60)).padStart(2, "0");
+                const ss = String(paid % 60).padStart(2, "0");
+                el.style.color = "#D946EF";
+                el.innerText = `Платное ожидание: +${mm}:${ss}`;
+            }
+        };
+        tick();
+        waitTimer = setInterval(tick, 1000);
+    }
+
+    document.getElementById("coming-out-btn").addEventListener("click", async () => {
+        if (!currentOrderId) return;
+        clientComing = "yes";
+        updateControls();
+        addMsg("Выхожу к машине!", true);
+        await fsPatch("orders/" + currentOrderId, { clientComing: "yes" });
+    });
 
     function resetChat() {
         stopTimers();
         chatBox.innerHTML = "";
-        currentOrderId = null; selectedDriverPhone = ""; lastDriverLat = null; lastDriverLon = null; step = 0;
+        currentOrderId = null; selectedDriverPhone = ""; lastDriverLat = null; lastDriverLon = null;
+        orderStatus = "searching"; arrivedAt = 0; clientComing = ""; arrivedNotified = false; step = 0;
         addMsg("Привет! Это АвтоПульс. Откуда вас забрать?", false);
         updateControls();
     }
@@ -471,7 +594,7 @@
             try {
                 const created = await fsAdd("orders", {
                     from: fromAddr, to: toAddr, phone: userPhone, driverPhone: "", price: "",
-                    status: "searching", createdAt: Date.now(),
+                    status: "searching", createdAt: Date.now(), arrivedAt: 0, clientComing: "",
                     driverLat: "", driverLon: "",
                     clientLat: loc ? String(loc.lat) : "",
                     clientLon: loc ? String(loc.lon) : ""
@@ -486,9 +609,9 @@
         }
         updateControls();
     }
-    document.getElementById("map-driver-btn").addEventListener("click", () => {
+        document.getElementById("map-driver-btn").addEventListener("click", () => {
         if (lastDriverLat !== null && lastDriverLon !== null) {
-            openInAppMap({ title: "Маршрут водителя к вам", driverLat: lastDriverLat, driverLon: lastDriverLon });
+            openInAppMap({ title: "3D-Маршрут водителя к вам", orderStatus: orderStatus, driverLat: lastDriverLat, driverLon: lastDriverLon });
         }
     });
 
@@ -497,7 +620,7 @@
         const check = async () => {
             if (!currentOrderId || isDriver) return;
             if (step === 5) {
-                const ord = await fsGet(`orders/${currentOrderId}`);
+                const ord = await fsGet("orders/" + currentOrderId);
                 if (!ord) {
                     stopTimers();
                     addMsg("Поездка завершена. Пожалуйста, не забудьте свои вещи в салоне. Спасибо, что выбрали АвтоПульс!", false);
@@ -506,21 +629,34 @@
                 } else {
                     const dLat = parseFloat(ord.driverLat);
                     const dLon = parseFloat(ord.driverLon);
-                    const distEl = document.getElementById("driver-dist-text");
-                    const mapBtn = document.getElementById("map-driver-btn");
-                    if (!isNaN(dLat) && !isNaN(dLon)) {
-                        lastDriverLat = dLat;
-                        lastDriverLon = dLon;
-                        mapBtn.classList.remove("hidden");
-                        const myLoc = await getBrowserLocation();
-                        distEl.innerText = myLoc ? calcDistanceText(myLoc.lat, myLoc.lon, dLat, dLon) : "Координаты получены";
+                    orderStatus = ord.status || "accepted";
+                    arrivedAt = Number(ord.arrivedAt || 0);
+                    clientComing = ord.clientComing || "";
+
+                    if (orderStatus === "arrived") {
+                        if (!arrivedNotified) {
+                            arrivedNotified = true;
+                            addMsg("Водитель на месте! Началось бесплатное ожидание 3 минуты.", false);
+                        }
+                        startWaitCountdown();
                     } else {
-                        mapBtn.classList.add("hidden");
-                        distEl.innerText = "Определяем координаты водителя...";
+                        const distEl = document.getElementById("driver-dist-text");
+                        const mapBtn = document.getElementById("map-driver-btn");
+                        if (!isNaN(dLat) && !isNaN(dLon)) {
+                            lastDriverLat = dLat;
+                            lastDriverLon = dLon;
+                            mapBtn.classList.remove("hidden");
+                            const myLoc = await getBrowserLocation();
+                            distEl.innerText = myLoc ? calcDistanceText(myLoc.lat, myLoc.lon, dLat, dLon) : "Координаты получены";
+                        } else {
+                            mapBtn.classList.add("hidden");
+                            distEl.innerText = "Определяем координаты водителя...";
+                        }
                     }
+                    updateControls();
                 }
             } else if (step === 3) {
-                const allOffers = await fsList(`orders/${currentOrderId}/offers`);
+                const allOffers = await fsList("orders/" + currentOrderId + "/offers");
                 const pending = allOffers.filter(o => o.status === "pending");
                 const list = document.getElementById("offers-list");
                 list.innerHTML = "";
@@ -547,7 +683,7 @@
 
     async function declineOffer(offerId, price) {
         if (!currentOrderId) return;
-        await fsPatch(`orders/${currentOrderId}/offers/${offerId}`, { status: "declined" });
+        await fsPatch("orders/" + currentOrderId + "/offers/" + offerId, { status: "declined" });
         addMsg(`Отказался от цены ${price} ₽. Ждем другие варианты...`, false);
     }
 
@@ -556,34 +692,52 @@
         const loc = await getBrowserLocation();
         const upd = { status: "accepted", price: price, driverPhone: dPhone };
         if (loc) { upd.clientLat = String(loc.lat); upd.clientLon = String(loc.lon); }
-        await fsPatch(`orders/${currentOrderId}`, upd);
-        await fsPatch(`orders/${currentOrderId}/offers/${offerId}`, { status: "accepted" });
+        await fsPatch("orders/" + currentOrderId, upd);
+        await fsPatch("orders/" + currentOrderId + "/offers/" + offerId, { status: "accepted" });
         selectedDriverPhone = dPhone;
+        orderStatus = "accepted";
         document.getElementById("offers-container").classList.add("hidden");
         addMsg(`Выбрал поездку за ${price} ₽!`, true);
         addMsg("Отлично! Водитель принял заявку и уже выехал к вам.", false);
         const cleanPhone = selectedDriverPhone.replace(/[^\d+]/g, "");
-        document.getElementById("call-driver-btn").href = `tel:${cleanPhone}`;
+        document.getElementById("call-driver-btn").href = "tel:" + cleanPhone;
         step = 5;
         updateControls();
     }
-    function routeToAddress(addr) {
-        openInAppMap({ title: "Навигация АвтоПульс", targetAddress: addr });
+    function openFullRoute(fromAddrStr, toAddrStr, statusStr, cLatStr, cLonStr) {
+        openInAppMap({
+            title: "Маршрут А -> Б",
+            pointA: "Ухта " + fromAddrStr,
+            pointB: "Ухта " + toAddrStr,
+            orderStatus: statusStr || "accepted",
+            clientLat: cLatStr ? parseFloat(cLatStr) : null,
+            clientLon: cLonStr ? parseFloat(cLonStr) : null
+        });
+    }
+
+    async function markDriverArrived(orderId) {
+        await fsPatch("orders/" + orderId, { status: "arrived", arrivedAt: Date.now() });
     }
 
     function startDriverPolling() {
         stopTimers();
         const driverBox = document.getElementById("driver-box");
-        let activeOrderIdForGps = null;
+        let activeMineOrder = null;
 
         gpsTimer = setInterval(async () => {
-            if (!isDriver || !activeOrderIdForGps) return;
+            if (!isDriver || !activeMineOrder) return;
             const loc = await getBrowserLocation();
             if (loc) {
-                await fsPatch(`orders/${activeOrderIdForGps}`, {
-                    driverLat: String(loc.lat),
-                    driverLon: String(loc.lon)
-                });
+                const upd = { driverLat: String(loc.lat), driverLon: String(loc.lon) };
+                const cLat = parseFloat(activeMineOrder.clientLat);
+                const cLon = parseFloat(activeMineOrder.clientLon);
+                if (activeMineOrder.status === "accepted" && !isNaN(cLat) && !isNaN(cLon)) {
+                    if (calcDistanceMeters(loc.lat, loc.lon, cLat, cLon) <= 70) {
+                        upd.status = "arrived";
+                        upd.arrivedAt = Date.now();
+                    }
+                }
+                await fsPatch("orders/" + activeMineOrder.id, upd);
             }
         }, 5000);
 
@@ -594,33 +748,45 @@
             const now = Date.now();
             let html = "";
             let count = 0;
-            activeOrderIdForGps = null;
+            activeMineOrder = null;
 
             for (const o of allOrders) {
                 if (o.status === "searching" && (now - (o.createdAt || 0) > 15 * 60 * 1000)) {
-                    fsDelete(`orders/${o.id}`);
+                    fsDelete("orders/" + o.id);
                     continue;
                 }
-                if (o.status !== "searching" && !(o.status === "accepted" && o.driverPhone === driverPhone)) continue;
+                const isMine = (o.status === "accepted" || o.status === "arrived") && o.driverPhone === driverPhone;
+                if (o.status !== "searching" && !isMine) continue;
                 count++;
-                const isMine = (o.status === "accepted" && o.driverPhone === driverPhone);
-                if (isMine) activeOrderIdForGps = o.id;
+                if (isMine) activeMineOrder = o;
 
+                let badgeHtml = "";
                 let actionHtml = "";
                 if (isMine) {
+                    const isArr = o.status === "arrived";
+                    badgeHtml = isArr
+                        ? `<span class="status-pill" style="background:rgba(16,185,129,0.2);color:#10B981;border:1px solid #10B981;">НА МЕСТЕ</span>`
+                        : `<span class="status-pill" style="background:rgba(56,189,248,0.2);color:#38BDF8;border:1px solid #38BDF8;">В ПУТИ К А</span>`;
+
                     const cleanClient = (o.phone || "").replace(/[^\d+]/g, "");
-                    const safeFrom = ("Ухта " + o.from).replace(/'/g, "");
-                    const safeTo = ("Ухта " + o.to).replace(/'/g, "");
+                    const safeFrom = (o.from || "").replace(/'/g, "");
+                    const safeTo = (o.to || "").replace(/'/g, "");
+                    const comingHtml = o.clientComing === "yes"
+                        ? `<div style="background:rgba(16,185,129,0.18);border:1px solid #10B981;border-radius:10px;padding:8px;color:#10B981;font-weight:800;font-size:14px;margin-bottom:8px;">Пассажир нажал «Выхожу»!</div>`
+                        : "";
+                    const arrivedBtnHtml = !isArr
+                        ? `<button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="markDriverArrived('${o.id}')">Я на месте (Ожидание 3 мин)</button>`
+                        : "";
+
                     actionHtml = `
-                        <p style="color:#10B981; font-weight:bold; margin-bottom:8px;">Пассажир выбрал вас! Цена: ${o.price} ₽</p>
-                        <div style="display:flex; gap:8px; margin-bottom:8px;">
-                            <button type="button" class="btn btn-blue" style="flex:1; font-size:13px;" onclick="routeToAddress('${safeFrom}')">К пассажиру</button>
-                            <button type="button" class="btn" style="flex:1; font-size:13px;" onclick="routeToAddress('${safeTo}')">До точки Б</button>
-                        </div>
+                        <p style="color:#10B981; font-weight:bold; margin-bottom:8px;">Заказ принят • Цена: ${o.price} ₽</p>
+                        ${comingHtml}
+                        <button type="button" class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="openFullRoute('${safeFrom}', '${safeTo}', '${o.status}', '${o.clientLat || ""}', '${o.clientLon || ""}')">Маршрут А -> Б (3D-карта)</button>
+                        ${arrivedBtnHtml}
                         <a href="tel:${cleanClient}" class="btn btn-outline-blue" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>
                         <button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder('${o.id}')">Завершить поездку</button>`;
                 } else {
-                    const offers = await fsList(`orders/${o.id}/offers`);
+                    const offers = await fsList("orders/" + o.id + "/offers");
                     const myOffer = offers.find(off => off.driverPhone === driverPhone);
                     if (myOffer) {
                         if (myOffer.status === "pending") {
@@ -641,7 +807,7 @@
                             </div>`;
                     }
                 }
-                html += `<div class="card ${isMine ? 'accepted' : ''}"><strong>Откуда: ${o.from}</strong><span>Куда: ${o.to}</span><span style="color:#38BDF8; font-weight:600;">Телефон: ${o.phone}</span><div style="margin-top:8px;">${actionHtml}</div></div>`;
+                html += `<div class="card ${isMine ? 'accepted' : ''}"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пункт А: ${o.from}</strong>${badgeHtml}</div><strong>Пункт Б: ${o.to}</strong><span style="color:#38BDF8; font-weight:600;">Телефон: ${o.phone}</span><div style="margin-top:8px;">${actionHtml}</div></div>`;
             }
             driverBox.innerHTML = count > 0 ? html : `<p style="text-align:center; color:#D946EF; margin-top:40px;">Пока нет активных заявок</p>`;
         };
@@ -650,23 +816,23 @@
     }
 
     async function createOffer(orderId) {
-        const inp = document.getElementById(`price-${orderId}`);
+        const inp = document.getElementById("price-" + orderId);
         if (inp && inp.value.trim()) {
-            await fsAdd(`orders/${orderId}/offers`, { driverPhone: driverPhone, price: inp.value.trim(), status: "pending" });
+            await fsAdd("orders/" + orderId + "/offers", { driverPhone: driverPhone, price: inp.value.trim(), status: "pending" });
             inp.blur();
         }
     }
 
     async function updateOffer(orderId, offerId) {
-        const inp = document.getElementById(`price-${orderId}`);
+        const inp = document.getElementById("price-" + orderId);
         if (inp && inp.value.trim()) {
-            await fsPatch(`orders/${orderId}/offers/${offerId}`, { price: inp.value.trim(), status: "pending" });
+            await fsPatch("orders/" + orderId + "/offers/" + offerId, { price: inp.value.trim(), status: "pending" });
             inp.blur();
         }
     }
 
     async function completeOrder(id) {
-        await fsDelete(`orders/${id}`);
+        await fsDelete("orders/" + id);
     }
     document.getElementById("send-btn").addEventListener("click", handleSend);
     chatInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleSend(); });
@@ -674,7 +840,7 @@
 
     document.getElementById("cancel-order-btn").addEventListener("click", async () => {
         stopTimers();
-        if (currentOrderId) await fsDelete(`orders/${currentOrderId}`);
+        if (currentOrderId) await fsDelete("orders/" + currentOrderId);
         document.getElementById("offers-container").classList.add("hidden");
         addMsg("Отменить заявку", true);
         addMsg("Заявка полностью отменена.", false);
