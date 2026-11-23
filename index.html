@@ -101,7 +101,7 @@
     </div>
     <div id="intransit-card" class="hidden" style="background:#101630; border:1.5px solid #D946EF; border-radius:14px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-            <div style="color:#D946EF; font-weight:800; font-size:14px;">В пути в точку Б</div>
+            <div id="intransit-title-text" style="color:#D946EF; font-weight:800; font-size:14px;">В пути в точку Б</div>
             <div id="intransit-dest-text" style="color:#fff; font-size:13px;">Маршрут активен</div>
         </div>
         <button type="button" id="map-transit-btn" class="btn btn-blue" style="padding:8px 12px; font-size:13px;">На карте</button>
@@ -119,8 +119,8 @@
     <div class="modal-content blue-border">
         <h3 id="map-modal-title" style="color:#38BDF8; font-size:16px;">3D-Навигация АвтоПульс</h3>
         <div id="inapp-map"></div>
-        <div id="map-route-info" style="font-size:13px; color:#fff; text-align:center; background:#101630; padding:8px; border-radius:10px; border:1px solid #A855F7;">Загрузка 3D-маршрута...</div>
-        <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-blue hidden" style="width:100%;">Навигатор к пассажиру</a>
+        <div id="map-route-info" style="font-size:13px; color:#fff; text-align:center; background:#101630; padding:8px; border-radius:10px; border:1px solid #A855F7;">Строим пошаговый маршрут...</div>
+        <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-blue hidden" style="width:100%;">Навигатор: К пассажиру</a>
         <button type="button" class="btn" id="close-map-btn" style="width:100%;">Закрыть карту</button>
     </div>
 </div>
@@ -278,28 +278,29 @@
     }
 
     let map3d = null;
-    let mapTrackTimer = null;
     let mapGeoWatchId = null;
 
-    async function openInAppMap({ title, pointA = "", extraStop = "", pointB = "", orderStatus = "accepted", driverLat = null, driverLon = null, clientLat = null, clientLon = null }) {
+    async function openInAppMap({ title, pointA = "", extraStop = "", pointB = "", orderStatus = "accepted", driverLat = null, driverLon = null }) {
         document.getElementById("map-modal-title").innerText = title;
         const infoEl = document.getElementById("map-route-info");
         const navBtn = document.getElementById("ext-nav-btn");
-        infoEl.innerText = "Загрузка 3D-маршрута...";
+        infoEl.innerText = "Строим пошаговый маршрут...";
         navBtn.classList.add("hidden");
         document.getElementById("map-modal").classList.remove("hidden");
 
-        if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
         if (mapGeoWatchId !== null && navigator.geolocation) {
             navigator.geolocation.clearWatch(mapGeoWatchId);
             mapGeoWatchId = null;
         }
 
-        const isToB = (orderStatus === "in_transit" || orderStatus === "arrived") && pointB;
-        const nextTarget = isToB ? pointB : (pointA || pointB);
-        if (nextTarget) {
-            navBtn.innerText = isToB ? "Навигатор в точку Б" : "Навигатор к пассажиру";
-            navBtn.href = S + "yandex.ru/maps/?rtext=~" + encodeURIComponent(nextTarget) + "&rtt=auto";
+        let stage = 3;
+        if (orderStatus === "accepted" || orderStatus === "arrived") stage = 1;
+        else if ((orderStatus === "to_extra" || orderStatus === "arrived_extra") && extraStop) stage = 2;
+
+        const targetAddr = (stage === 1) ? pointA : (stage === 2 ? extraStop : (pointB || pointA));
+        if (targetAddr) {
+            navBtn.innerText = (stage === 1) ? "Навигатор: К пассажиру" : (stage === 2 ? "Навигатор: На заезд" : "Навигатор: В точку Б");
+            navBtn.href = S + "yandex.ru/maps/?rtext=~" + encodeURIComponent(targetAddr) + "&rtt=auto";
             navBtn.classList.remove("hidden");
         }
 
@@ -321,8 +322,8 @@
             });
 
             const myLoc = await getBrowserLocation();
-            const initLat = clientLat || (myLoc && myLoc.lat) || null;
-            const initLon = clientLon || (myLoc && myLoc.lon) || null;
+            const initLat = driverLat || (myLoc && myLoc.lat) || null;
+            const initLon = driverLon || (myLoc && myLoc.lon) || null;
 
             const PERSON_SVG = '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>';
             const HOUSE_SVG = '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>';
@@ -341,27 +342,8 @@
                 return el;
             }
 
-            function setLine(id, color, coords) {
-                const data = { type: "Feature", geometry: { type: "LineString", coordinates: coords } };
-                if (map3d.getSource(id)) map3d.getSource(id).setData(data);
-                else {
-                    map3d.addSource(id, { type: "geojson", data: data });
-                    map3d.addLayer({ id: id, type: "line", source: id, layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": color, "line-width": 6 } });
-                }
-            }
-
-            let firstFit = true;
-            function smartZoom(dist, destLon, destLat, coords) {
-                if (dist <= 350) { map3d.easeTo({ center: [destLon, destLat], zoom: 18, pitch: 62, duration: 900 }); firstFit = false; }
-                else if (dist <= 1200) { map3d.easeTo({ center: [destLon, destLat], zoom: 16.5, pitch: 58, duration: 900 }); firstFit = false; }
-                else if (firstFit && coords.length) {
-                    const b = coords.reduce((acc, c) => acc.extend(c), new maplibregl.LngLatBounds(coords.at(0), coords.at(0)));
-                    map3d.fitBounds(b, { padding: 45, pitch: 55 });
-                    firstFit = false;
-                }
-            }
-
             async function geocode(q) {
+                if (!q) return null;
                 const r = await fetch(S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q));
                 const res = await r.json();
                 if (!res || !res.length) return null;
@@ -396,87 +378,61 @@
                     });
                 } catch (_) {}
 
-                let carMarker = null;
-                if (pointA && pointB) {
-                    const ptA = (initLat && initLon) ? { lat: initLat, lon: initLon } : await geocode(pointA);
-                    const ptEx = extraStop ? await geocode(extraStop) : null;
-                    const ptB = await geocode(pointB);
+                const ptA = await geocode(pointA);
+                const ptEx = await geocode(extraStop);
+                const ptB = await geocode(pointB);
 
-                    if (ptA) new maplibregl.Marker({ element: makeIconPin(PERSON_SVG, "#38BDF8", "#0B0F22") }).setLngLat([ptA.lon, ptA.lat]).addTo(map3d);
-                    if (ptEx) new maplibregl.Marker({ element: makeBadge("ЗАЕЗД", "#F59E0B", "#ffffff") }).setLngLat([ptEx.lon, ptEx.lat]).addTo(map3d);
-                    if (ptB) new maplibregl.Marker({ element: makeIconPin(HOUSE_SVG, "#D946EF", "#ffffff") }).setLngLat([ptB.lon, ptB.lat]).addTo(map3d);
+                if (ptA) new maplibregl.Marker({ element: makeIconPin(PERSON_SVG, "#38BDF8", "#0B0F22") }).setLngLat([ptA.lon, ptA.lat]).addTo(map3d);
+                if (ptEx) new maplibregl.Marker({ element: makeBadge("ЗАЕЗД", "#F59E0B", "#ffffff") }).setLngLat([ptEx.lon, ptEx.lat]).addTo(map3d);
+                if (ptB) new maplibregl.Marker({ element: makeIconPin(HOUSE_SVG, "#D946EF", "#ffffff") }).setLngLat([ptB.lon, ptB.lat]).addTo(map3d);
 
-                    if (ptA && ptB) {
-                        const viaStr = ptEx ? (";" + ptEx.lon + "," + ptEx.lat) : "";
-                        const rAB = await fetch(S + "router.project-osrm.org/route/v1/driving/" + ptA.lon + "," + ptA.lat + viaStr + ";" + ptB.lon + "," + ptB.lat + "?overview=full&geometries=geojson").then(r => r.json());
-                        if (rAB.routes && rAB.routes.length) setLine("route-ab", "#A855F7", rAB.routes.at(0).geometry.coordinates);
+                const targetPt = (stage === 1) ? ptA : (stage === 2 ? ptEx : ptB);
+                const stageLabel = (stage === 1) ? "Этап 1 • К пассажиру" : (stage === 2 ? "Этап 2 • На заезд" : "Финал • В точку Б");
+
+                if (!targetPt) { infoEl.innerText = "Адрес не найден на карте"; return; }
+
+                let carMarker = null, firstFit = true;
+                async function updateLeg(lat, lon) {
+                    if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) {
+                        map3d.easeTo({ center: [targetPt.lon, targetPt.lat], zoom: 16.5, pitch: 60 });
+                        infoEl.innerText = stageLabel + " (ожидание GPS...)";
+                        return;
                     }
+                    if (!carMarker) carMarker = new maplibregl.Marker({ element: makeBadge("АВТО", "#10B981", "#ffffff") }).setLngLat([lon, lat]).addTo(map3d);
+                    else carMarker.setLngLat([lon, lat]);
 
-                    const updateNav = async (curLat, curLon) => {
-                        if (!carMarker) carMarker = new maplibregl.Marker({ element: makeBadge("АВТО", "#10B981", "#ffffff") }).setLngLat([curLon, curLat]).addTo(map3d);
-                        else carMarker.setLngLat([curLon, curLat]);
-
-                        const isGoingToB = (orderStatus === "in_transit" || orderStatus === "arrived");
-                        const target = (isGoingToB && ptB) ? ptB : (ptA || ptB);
-                        const label = isGoingToB ? "В точку Б" : "К пассажиру";
-                        const viaPart = (isGoingToB && ptEx) ? (";" + ptEx.lon + "," + ptEx.lat) : "";
-
-                        if (target) {
-                            const r1 = await fetch(S + "router.project-osrm.org/route/v1/driving/" + curLon + "," + curLat + viaPart + ";" + target.lon + "," + target.lat + "?overview=full&geometries=geojson").then(r => r.json());
-                            if (r1.routes && r1.routes.length) {
-                                const r0 = r1.routes.at(0);
-                                setLine("route-cur", "#38BDF8", r0.geometry.coordinates);
-                                smartZoom(r0.distance, target.lon, target.lat, r0.geometry.coordinates);
-                                const km = (r0.distance / 1000).toFixed(1), min = Math.max(1, Math.round(r0.duration / 60));
-                                infoEl.innerHTML = label + ": <b style='color:#38BDF8'>" + km + " км</b> • ~" + min + " мин";
-                            }
+                    const r = await fetch(S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + targetPt.lon + "," + targetPt.lat + "?overview=full&geometries=geojson").then(res => res.json());
+                    if (r.routes && r.routes.length) {
+                        const r0 = r.routes.at(0), coords = r0.geometry.coordinates;
+                        const data = { type: "Feature", geometry: { type: "LineString", coordinates: coords } };
+                        if (map3d.getSource("leg")) map3d.getSource("leg").setData(data);
+                        else {
+                            map3d.addSource("leg", { type: "geojson", data: data });
+                            map3d.addLayer({ id: "leg-line", type: "line", source: "leg", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#38BDF8", "line-width": 6 } });
                         }
-                    };
-
-                    if (myLoc) await updateNav(myLoc.lat, myLoc.lon);
-                    else if (ptA) map3d.easeTo({ center: [ptA.lon, ptA.lat], zoom: 16, pitch: 60 });
-
-                    if (navigator.geolocation) {
-                        mapGeoWatchId = navigator.geolocation.watchPosition(
-                            pos => updateNav(pos.coords.latitude, pos.coords.longitude),
-                            () => {},
-                            { enableHighAccuracy: true, maximumAge: 2500 }
-                        );
-                    }
-                } else if (driverLat !== null && driverLon !== null) {
-                    if (initLat && initLon) new maplibregl.Marker({ element: makeIconPin(PERSON_SVG, "#10B981", "#ffffff") }).setLngLat([initLon, initLat]).addTo(map3d);
-                    const drawCar = async (lat, lon) => {
-                        if (!carMarker) carMarker = new maplibregl.Marker({ element: makeBadge("АВТО", "#A855F7", "#38BDF8") }).setLngLat([lon, lat]).addTo(map3d);
-                        else carMarker.setLngLat([lon, lat]);
-                        if (initLat && initLon) {
-                            const rd = await fetch(S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + initLon + "," + initLat + "?overview=full&geometries=geojson").then(r => r.json());
-                            if (rd.routes && rd.routes.length) {
-                                const r0 = rd.routes.at(0);
-                                setLine("route-cur", "#38BDF8", r0.geometry.coordinates);
-                                smartZoom(r0.distance, initLon, initLat, r0.geometry.coordinates);
-                                if (r0.distance > 100000) infoEl.innerHTML = "Автомобиль в пути • <b style='color:#38BDF8'>Ухта</b>";
-                                else infoEl.innerHTML = "Автомобиль в пути: <b style='color:#38BDF8'>" + (r0.distance / 1000).toFixed(1) + " км</b> • ~" + Math.max(1, Math.round(r0.duration / 60)) + " мин";
-                            }
+                        if (r0.distance <= 350) { map3d.easeTo({ center: [targetPt.lon, targetPt.lat], zoom: 18, pitch: 62, duration: 900 }); firstFit = false; }
+                        else if (firstFit && coords.length) {
+                            const b = coords.reduce((acc, c) => acc.extend(c), new maplibregl.LngLatBounds(coords.at(0), coords.at(0)));
+                            map3d.fitBounds(b, { padding: 45, pitch: 55 }); firstFit = false;
                         }
-                    };
-                    await drawCar(driverLat, driverLon);
-                    if (currentOrderId) {
-                        mapTrackTimer = setInterval(async () => {
-                            if (document.getElementById("map-modal").classList.contains("hidden")) { clearInterval(mapTrackTimer); return; }
-                            const ord = await fsGet("orders/" + currentOrderId);
-                            if (ord) {
-                                const nLat = parseFloat(ord.driverLat), nLon = parseFloat(ord.driverLon);
-                                if (!isNaN(nLat) && !isNaN(nLon)) await drawCar(nLat, nLon);
-                            }
-                        }, 4000);
+                        const km = (r0.distance / 1000).toFixed(1), min = Math.max(1, Math.round(r0.duration / 60));
+                        infoEl.innerHTML = stageLabel + ": <b style='color:#38BDF8'>" + km + " км</b> • ~" + min + " мин";
                     }
+                }
+
+                await updateLeg(initLat, initLon);
+                if (navigator.geolocation) {
+                    mapGeoWatchId = navigator.geolocation.watchPosition(
+                        pos => updateLeg(pos.coords.latitude, pos.coords.longitude),
+                        () => {},
+                        { enableHighAccuracy: true, maximumAge: 2500 }
+                    );
                 }
             });
         }, 120);
     }
 
     document.getElementById("close-map-btn").addEventListener("click", () => {
-        if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
         if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
         document.getElementById("map-modal").classList.add("hidden");
     });
@@ -496,15 +452,17 @@
     }
 
     function updateControls() {
+        const isArrivedAny = (orderStatus === "arrived" || orderStatus === "arrived_extra");
+        const isMovingAny = (orderStatus === "to_extra" || orderStatus === "in_transit");
         document.getElementById("extra-stop-choice").classList.toggle("hidden", step !== 2);
         document.getElementById("passenger-controls").classList.toggle("hidden", !(step === 0 || step === 1 || step === 3 || step === 4));
         document.getElementById("active-controls").classList.toggle("hidden", step !== 10 && step !== 12);
         document.getElementById("call-driver-btn").classList.toggle("hidden", !(step === 12 && selectedDriverPhone));
         document.getElementById("driver-track-card").classList.toggle("hidden", !(step === 12 && orderStatus === "accepted"));
-        document.getElementById("arrived-card").classList.toggle("hidden", !(step === 12 && orderStatus === "arrived"));
-        document.getElementById("intransit-card").classList.toggle("hidden", !(step === 12 && orderStatus === "in_transit"));
-        document.getElementById("coming-out-btn").classList.toggle("hidden", clientComing === "yes");
-        document.getElementById("coming-out-ack").classList.toggle("hidden", clientComing !== "yes");
+        document.getElementById("arrived-card").classList.toggle("hidden", !(step === 12 && isArrivedAny));
+        document.getElementById("intransit-card").classList.toggle("hidden", !(step === 12 && isMovingAny));
+        document.getElementById("coming-out-btn").classList.toggle("hidden", !(orderStatus === "arrived" && clientComing !== "yes"));
+        document.getElementById("coming-out-ack").classList.toggle("hidden", !(orderStatus === "arrived" && clientComing === "yes"));
         document.getElementById("new-order-controls").classList.toggle("hidden", step !== 13);
         if (step !== 10) document.getElementById("offers-container").classList.add("hidden");
 
@@ -523,7 +481,7 @@
     function startWaitCountdown() {
         if (waitTimer) return;
         const tick = () => {
-            if (orderStatus !== "arrived") { clearInterval(waitTimer); waitTimer = null; return; }
+            if (orderStatus !== "arrived" && orderStatus !== "arrived_extra") { clearInterval(waitTimer); waitTimer = null; return; }
             const startMs = arrivedAt > 0 ? arrivedAt : Date.now();
             const elapsed = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
             const left = Math.max(0, 180 - elapsed);
@@ -641,18 +599,20 @@
                     orderStatus = ord.status || "accepted";
                     arrivedAt = Number(ord.arrivedAt || 0);
                     clientComing = ord.clientComing || "";
-                    document.getElementById("intransit-dest-text").innerText = "Маршрут: " + toAddr;
+                    document.getElementById("intransit-title-text").innerText = (orderStatus === "to_extra") ? "Едем на заезд" : "В пути в точку Б";
+                    document.getElementById("intransit-dest-text").innerText = (orderStatus === "to_extra") ? extraStopAddr : toAddr;
 
-                    if (orderStatus === "arrived") {
+                    if (orderStatus === "arrived" || orderStatus === "arrived_extra") {
                         if (!arrivedNotified) {
                             arrivedNotified = true;
                             addMsg("Водитель на месте! Началось бесплатное ожидание 3 минуты.", false);
                         }
                         startWaitCountdown();
-                    } else if (orderStatus === "in_transit") {
+                    } else if (orderStatus === "in_transit" || orderStatus === "to_extra") {
+                        arrivedNotified = false;
                         if (!inTransitNotified) {
                             inTransitNotified = true;
-                            addMsg("Приятной поездки! Вы движетесь в точку Б.", false);
+                            addMsg("Приятной поездки! Движемся по маршруту.", false);
                         }
                     } else {
                         const distEl = document.getElementById("driver-dist-text");
@@ -713,25 +673,24 @@
 
     let autoOpenedOrderId = "";
 
-    function openFullRoute(fromAddrStr, extraStr, toAddrStr, statusStr, cLatStr, cLonStr) {
+    function openFullRoute(fromAddrStr, extraStr, toAddrStr, statusStr) {
+        let navTitle = "Этап 1 • К пассажиру";
+        if (statusStr === "to_extra" || statusStr === "arrived_extra") navTitle = "Этап 2 • На заезд";
+        else if (statusStr === "in_transit") navTitle = "Финал • В точку Б";
         openInAppMap({
-            title: statusStr === "in_transit" ? "Маршрут: В точку Б" : "Маршрут: Пассажир -> Точка Б",
+            title: navTitle,
             pointA: "Ухта " + fromAddrStr,
             extraStop: extraStr ? ("Ухта " + extraStr) : "",
             pointB: "Ухта " + toAddrStr,
-            orderStatus: statusStr || "accepted",
-            clientLat: cLatStr ? parseFloat(cLatStr) : null,
-            clientLon: cLonStr ? parseFloat(cLonStr) : null
+            orderStatus: statusStr || "accepted"
         });
     }
 
-    async function markDriverArrived(orderId) {
-        await fsPatch("orders/" + orderId, { status: "arrived", arrivedAt: Date.now() });
-    }
-
-    async function markPassengerPickedUp(orderId, fromStr, extraStr, toStr, cLatStr, cLonStr) {
-        await fsPatch("orders/" + orderId, { status: "in_transit" });
-        openFullRoute(fromStr, extraStr, toStr, "in_transit", cLatStr, cLonStr);
+    async function setOrderStage(orderId, newStatus, withWaitTimer, openMapAfter, fromStr, extraStr, toStr) {
+        const upd = { status: newStatus };
+        if (withWaitTimer) upd.arrivedAt = Date.now();
+        await fsPatch("orders/" + orderId, upd);
+        if (openMapAfter) openFullRoute(fromStr, extraStr, toStr, newStatus);
     }
     function startDriverPolling() {
         stopTimers();
@@ -769,14 +728,15 @@
                     fsDelete("orders/" + o.id);
                     continue;
                 }
-                const isMine = (o.status === "accepted" || o.status === "arrived" || o.status === "in_transit") && o.driverPhone === driverPhone;
+                const mineStatuses = ["accepted", "arrived", "to_extra", "arrived_extra", "in_transit"];
+                const isMine = mineStatuses.includes(o.status) && o.driverPhone === driverPhone;
                 if (o.status !== "searching" && !isMine) continue;
                 count++;
                 if (isMine) {
                     activeMineOrder = o;
                     if (autoOpenedOrderId !== o.id) {
                         autoOpenedOrderId = o.id;
-                        openFullRoute(o.from || "", o.extraStop || "", o.to || "", o.status, o.clientLat || "", o.clientLon || "");
+                        openFullRoute(o.from || "", o.extraStop || "", o.to || "", o.status);
                     }
                 }
 
@@ -784,7 +744,11 @@
                 let actionHtml = "";
                 if (isMine) {
                     if (o.status === "arrived") {
-                        badgeHtml = '<span class="status-pill" style="background:rgba(16,185,129,0.2);color:#10B981;border:1px solid #10B981;">НА МЕСТЕ</span>';
+                        badgeHtml = '<span class="status-pill" style="background:rgba(16,185,129,0.2);color:#10B981;border:1px solid #10B981;">НА МЕСТЕ (А)</span>';
+                    } else if (o.status === "to_extra") {
+                        badgeHtml = '<span class="status-pill" style="background:rgba(217,70,239,0.2);color:#D946EF;border:1px solid #D946EF;">НА ЗАЕЗД</span>';
+                    } else if (o.status === "arrived_extra") {
+                        badgeHtml = '<span class="status-pill" style="background:rgba(16,185,129,0.2);color:#10B981;border:1px solid #10B981;">НА ЗАЕЗДЕ</span>';
                     } else if (o.status === "in_transit") {
                         badgeHtml = '<span class="status-pill" style="background:rgba(217,70,239,0.2);color:#D946EF;border:1px solid #D946EF;">В ТОЧКУ Б</span>';
                     } else {
@@ -795,21 +759,32 @@
                     const safeFrom = (o.from || "").replace(/'/g, "");
                     const safeExtra = (o.extraStop || "").replace(/'/g, "");
                     const safeTo = (o.to || "").replace(/'/g, "");
+                    const hasEx = Boolean(o.extraStop && o.extraStop.trim());
+
                     const comingHtml = (o.status === "arrived" && o.clientComing === "yes")
                         ? '<div style="background:rgba(16,185,129,0.18);border:1px solid #10B981;border-radius:10px;padding:8px;color:#10B981;font-weight:800;font-size:14px;margin-bottom:8px;">Пассажир нажал «Выхожу»!</div>'
                         : "";
-                    const arrivedBtnHtml = (o.status === "accepted")
-                        ? '<button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="markDriverArrived(\'' + o.id + '\')">Я на месте (Ожидание 3 мин)</button>'
-                        : "";
-                    const pickupBtnHtml = (o.status === "accepted" || o.status === "arrived")
-                        ? '<button type="button" class="btn btn-purple-bright" style="width:100%;margin-bottom:8px;" onclick="markPassengerPickedUp(\'' + o.id + '\', \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\', \'' + (o.clientLat || "") + '\', \'' + (o.clientLon || "") + '\')">Пассажир сел -> В точку Б</button>'
-                        : "";
+
+                    let stageBtns = "";
+                    if (o.status === "accepted") {
+                        stageBtns += '<button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'arrived\', true, false, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">На месте (Точка А • 3 мин)</button>';
+                    }
+                    if (o.status === "accepted" || o.status === "arrived") {
+                        const nextSt = hasEx ? "to_extra" : "in_transit";
+                        const nextLbl = hasEx ? "Пассажир сел -> На заезд" : "Пассажир сел -> В точку Б";
+                        stageBtns += '<button type="button" class="btn btn-purple-bright" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'' + nextSt + '\', false, true, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">' + nextLbl + '</button>';
+                    }
+                    if (o.status === "to_extra") {
+                        stageBtns += '<button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'arrived_extra\', true, false, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">На месте (Заезд • 3 мин)</button>';
+                    }
+                    if (o.status === "to_extra" || o.status === "arrived_extra") {
+                        stageBtns += '<button type="button" class="btn btn-purple-bright" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'in_transit\', false, true, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">Едем дальше -> В точку Б</button>';
+                    }
 
                     actionHtml = '<p style="color:#10B981; font-weight:bold; margin-bottom:8px;">Заказ принят • Цена: ' + o.price + ' ₽</p>' +
                         comingHtml +
-                        '<button type="button" class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="openFullRoute(\'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\', \'' + o.status + '\', \'' + (o.clientLat || "") + '\', \'' + (o.clientLon || "") + '\')">Открыть 3D-маршрут</button>' +
-                        arrivedBtnHtml +
-                        pickupBtnHtml +
+                        '<button type="button" class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="openFullRoute(\'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\', \'' + o.status + '\')">Открыть 3D-навигатор</button>' +
+                        stageBtns +
                         '<a href="tel:' + cleanClient + '" class="btn btn-outline-blue" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>' +
                         '<button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder(\'' + o.id + '\')">Завершить поездку</button>';
                 } else {
@@ -828,7 +803,7 @@
                 const extraLineHtml = o.extraStop ? ('<strong style="color:#F59E0B;">Заезд: ' + o.extraStop + '</strong>') : "";
                 html += '<div class="card ' + (isMine ? 'accepted' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пассажир (А): ' + o.from + '</strong>' + badgeHtml + '</div>' + extraLineHtml + '<strong>Назначение (Б): ' + o.to + '</strong><span style="color:#38BDF8; font-weight:600;">Телефон: ' + o.phone + '</span><div style="margin-top:8px;">' + actionHtml + '</div></div>';
             }
-            driverBox.innerHTML = count > 0 ? html : '<p style="text-align:center; color:#D946EF; margin-top:40px;">Пока нет активных заявок</p>';
+            driverBox.innerHTML = count > 0 ? html : '<p style="text-align:center; color:#D946EF; margin-top:40px;">Активных заявок пока нет<br>(Водитель: ' + driverPhone + ')</p>';
         };
         refresh();
         pollTimer = setInterval(refresh, 3000);
