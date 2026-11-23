@@ -325,13 +325,14 @@
             const initLat = driverLat || (myLoc && myLoc.lat) || null;
             const initLon = driverLon || (myLoc && myLoc.lon) || null;
 
+            const CAR_SVG = '<path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>';
             const PERSON_SVG = '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>';
             const HOUSE_SVG = '<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>';
 
             function makeIconPin(svgPath, bg, border) {
                 const el = document.createElement("div");
-                el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff">' + svgPath + '</svg>';
-                el.style.cssText = "width:32px;height:32px;border-radius:50%;background:" + bg + ";display:flex;align-items:center;justify-content:center;border:2.5px solid " + border + ";box-shadow:0 0 14px " + bg + ";z-index:1000;";
+                el.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="#ffffff">' + svgPath + '</svg>';
+                el.style.cssText = "width:34px;height:34px;border-radius:50%;background:" + bg + ";display:flex;align-items:center;justify-content:center;border:2.5px solid " + border + ";box-shadow:0 0 14px " + bg + ";z-index:1000;";
                 return el;
             }
 
@@ -398,7 +399,7 @@
                         infoEl.innerText = stageLabel + " (ожидание GPS...)";
                         return;
                     }
-                    if (!carMarker) carMarker = new maplibregl.Marker({ element: makeBadge("АВТО", "#10B981", "#ffffff") }).setLngLat([lon, lat]).addTo(map3d);
+                    if (!carMarker) carMarker = new maplibregl.Marker({ element: makeIconPin(CAR_SVG, "#10B981", "#ffffff") }).setLngLat([lon, lat]).addTo(map3d);
                     else carMarker.setLngLat([lon, lat]);
 
                     const r = await fetch(S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + targetPt.lon + "," + targetPt.lat + "?overview=full&geometries=geojson").then(res => res.json());
@@ -673,7 +674,7 @@
 
     let autoOpenedOrderId = "";
 
-    function openFullRoute(fromAddrStr, extraStr, toAddrStr, statusStr) {
+    function openFullRoute(fromAddrStr, extraStr, toAddrStr, statusStr, dLatStr, dLonStr) {
         let navTitle = "Этап 1 • К пассажиру";
         if (statusStr === "to_extra" || statusStr === "arrived_extra") navTitle = "Этап 2 • На заезд";
         else if (statusStr === "in_transit") navTitle = "Финал • В точку Б";
@@ -682,15 +683,21 @@
             pointA: "Ухта " + fromAddrStr,
             extraStop: extraStr ? ("Ухта " + extraStr) : "",
             pointB: "Ухта " + toAddrStr,
-            orderStatus: statusStr || "accepted"
+            orderStatus: statusStr || "accepted",
+            driverLat: dLatStr ? parseFloat(dLatStr) : null,
+            driverLon: dLonStr ? parseFloat(dLonStr) : null
         });
     }
 
     async function setOrderStage(orderId, newStatus, withWaitTimer, openMapAfter, fromStr, extraStr, toStr) {
+        const loc = await getBrowserLocation();
         const upd = { status: newStatus };
         if (withWaitTimer) upd.arrivedAt = Date.now();
+        if (loc) { upd.driverLat = String(loc.lat); upd.driverLon = String(loc.lon); }
         await fsPatch("orders/" + orderId, upd);
-        if (openMapAfter) openFullRoute(fromStr, extraStr, toStr, newStatus);
+        if (openMapAfter) {
+            openFullRoute(fromStr, extraStr, toStr, newStatus, loc ? String(loc.lat) : "", loc ? String(loc.lon) : "");
+        }
     }
     function startDriverPolling() {
         stopTimers();
@@ -736,7 +743,7 @@
                     activeMineOrder = o;
                     if (autoOpenedOrderId !== o.id) {
                         autoOpenedOrderId = o.id;
-                        openFullRoute(o.from || "", o.extraStop || "", o.to || "", o.status);
+                        openFullRoute(o.from || "", o.extraStop || "", o.to || "", o.status, o.driverLat || "", o.driverLon || "");
                     }
                 }
 
@@ -783,7 +790,7 @@
 
                     actionHtml = '<p style="color:#10B981; font-weight:bold; margin-bottom:8px;">Заказ принят • Цена: ' + o.price + ' ₽</p>' +
                         comingHtml +
-                        '<button type="button" class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="openFullRoute(\'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\', \'' + o.status + '\')">Открыть 3D-навигатор</button>' +
+                        '<button type="button" class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="openFullRoute(\'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\', \'' + o.status + '\', \'' + (o.driverLat || "") + '\', \'' + (o.driverLon || "") + '\')">Открыть 3D-навигатор</button>' +
                         stageBtns +
                         '<a href="tel:' + cleanClient + '" class="btn btn-outline-blue" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>' +
                         '<button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder(\'' + o.id + '\')">Завершить поездку</button>';
