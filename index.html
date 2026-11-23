@@ -345,15 +345,29 @@
 
             async function geocode(q) {
                 if (!q) return null;
-                const r = await fetch(S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q));
-                const res = await r.json();
-                if (!res || !res.length) return null;
-                return { lat: parseFloat(res.at(0).lat), lon: parseFloat(res.at(0).lon) };
-            }
-            map3d.on("load", async () => {
                 try {
-                    map3d.setLight({ anchor: "viewport", color: "#FFFFFF", intensity: 0.9 });
+                    const ctrl = new AbortController();
+                    const t = setTimeout(() => ctrl.abort(), 3500);
+                    const r = await fetch(S + "photon.komoot.io/api/?q=" + encodeURIComponent(q) + "&lat=63.567&lon=53.683&limit=1", { signal: ctrl.signal });
+                    clearTimeout(t);
+                    const res = await r.json();
+                    if (res && res.features && res.features.length) {
+                        const c = res.features.at(0).geometry.coordinates;
+                        return { lat: parseFloat(c.at(1)), lon: parseFloat(c.at(0)) };
+                    }
+                } catch (_) {}
+                try {
+                    const r2 = await fetch(S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q));
+                    const res2 = await r2.json();
+                    if (res2 && res2.length) return { lat: parseFloat(res2.at(0).lat), lon: parseFloat(res2.at(0).lon) };
+                } catch (_) {}
+                return null;
+            }
+            function apply3DTheme() {
+                try {
+                    map3d.setLight({ anchor: "viewport", color: "#FFFFFF", intensity: 0.95 });
                     const st = map3d.getStyle();
+                    if (!st || !st.layers) return;
                     let bldSource = "openmaptiles";
                     st.layers.forEach(l => {
                         try {
@@ -363,21 +377,29 @@
                             else if (l.type === "symbol") map3d.setPaintProperty(l.id, "text-color", "#FFFFFF");
                         } catch (_) {}
                     });
-                    map3d.addLayer({
-                        id: "3d-buildings-extrude",
-                        source: bldSource,
-                        "source-layer": "building",
-                        type: "fill-extrusion",
-                        minzoom: 13,
-                        paint: {
-                            "fill-extrusion-color": "#4361EE",
-                            "fill-extrusion-height": ["*", ["coalesce", ["get", "render_height"], 12], 1.4],
-                            "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-                            "fill-extrusion-vertical-gradient": true,
-                            "fill-extrusion-opacity": 0.94
-                        }
-                    });
+                    if (!map3d.getLayer("3d-buildings-extrude")) {
+                        map3d.addLayer({
+                            id: "3d-buildings-extrude",
+                            source: bldSource,
+                            "source-layer": "building",
+                            type: "fill-extrusion",
+                            minzoom: 13,
+                            paint: {
+                                "fill-extrusion-color": "#4361EE",
+                                "fill-extrusion-height": ["*", ["coalesce", ["get", "render_height"], 12], 1.4],
+                                "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+                                "fill-extrusion-vertical-gradient": true,
+                                "fill-extrusion-opacity": 0.94
+                            }
+                        });
+                    }
                 } catch (_) {}
+            }
+
+            map3d.on("styledata", apply3DTheme);
+
+            map3d.on("load", async () => {
+                apply3DTheme();
 
                 const ptA = await geocode(pointA);
                 const ptEx = await geocode(extraStop);
@@ -396,7 +418,7 @@
                 async function updateLeg(lat, lon) {
                     if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) {
                         map3d.easeTo({ center: [targetPt.lon, targetPt.lat], zoom: 16.5, pitch: 60 });
-                        infoEl.innerText = stageLabel + " (ожидание GPS...)";
+                        infoEl.innerText = stageLabel + " (включите геолокацию)";
                         return;
                     }
                     if (!carMarker) carMarker = new maplibregl.Marker({ element: makeIconPin(CAR_SVG, "#10B981", "#ffffff") }).setLngLat([lon, lat]).addTo(map3d);
