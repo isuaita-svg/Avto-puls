@@ -6,8 +6,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="АвтоПульс">
-    <link rel="apple-touch-icon" href="icon.png">
-    <link rel="icon" type="image/png" href="icon.png">
     <title>АвтоПульс • Ухта</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -263,7 +261,7 @@
     function calcDistanceText(lat1, lon1, lat2, lon2) {
         const m = calcDistanceMeters(lat1, lon1, lat2, lon2);
         if (m > 100000) return "В пути (Ухта)";
-        return m < 1000 ? `${m} м от вас` : `${(m / 1000).toFixed(1)} км от вас`;
+        return m < 1000 ? (m + " м от вас") : ((m / 1000).toFixed(1) + " км от вас");
     }
 
     let map3d = null;
@@ -295,7 +293,6 @@
             infoEl.innerText = "Не удалось загрузить 3D-карту. Проверьте интернет.";
             return;
         }
-
         setTimeout(async () => {
             if (map3d) { map3d.remove(); map3d = null; }
             map3d = new maplibregl.Map({
@@ -356,7 +353,6 @@
                 if (!res || !res.length) return null;
                 return { lat: parseFloat(res.at(0).lat), lon: parseFloat(res.at(0).lon) };
             }
-
             map3d.on("load", async () => {
                 try {
                     map3d.setLight({ anchor: "viewport", color: "#FFFFFF", intensity: 0.9 });
@@ -411,56 +407,58 @@
                                 setLine("route-cur", "#38BDF8", r0.geometry.coordinates);
                                 smartZoom(r0.distance, target.lon, target.lat, r0.geometry.coordinates);
                                 const km = (r0.distance / 1000).toFixed(1), min = Math.max(1, Math.round(r0.duration / 60));
-infoEl.innerHTML = label + ": " + km + " км • ~" + min + " мин";
-}
-}
-};
-if (myLoc) await updateNav(myLoc.lat, myLoc.lon);
-else if (ptA) map3d.easeTo({ center: [ptA.lon, ptA.lat], zoom: 16, pitch: 60 });
-if (navigator.geolocation) {
-mapGeoWatchId = navigator.geolocation.watchPosition(
-pos => updateNav(pos.coords.latitude, pos.coords.longitude),
-() => {},
-{ enableHighAccuracy: true, maximumAge: 2500 }
-);
-}
-} else if (driverLat !== null && driverLon !== null) {
-if (initLat && initLon) new maplibregl.Marker({ element: makeIconPin(PERSON_SVG, "#10B981", "#ffffff") }).setLngLat([initLon, initLat]).addTo(map3d);
-const drawCar = async (lat, lon) => {
-if (!carMarker) carMarker = new maplibregl.Marker({ element: makeBadge("АВТО", "#A855F7", "#38BDF8") }).setLngLat([lon, lat]).addTo(map3d);
-else carMarker.setLngLat([lon, lat]);
-if (initLat && initLon) {
-const rd = await fetch(S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + initLon + "," + initLat + "?overview=full&geometries=geojson").then(r => r.json());
-if (rd.routes && rd.routes.length) {
-const r0 = rd.routes.at(0);
-setLine("route-cur", "#38BDF8", r0.geometry.coordinates);
-smartZoom(r0.distance, initLon, initLat, r0.geometry.coordinates);
-if (r0.distance > 100000) infoEl.innerHTML = "Автомобиль в пути • Ухта";
-else infoEl.innerHTML = "Автомобиль в пути: " + (r0.distance / 1000).toFixed(1) + " км • ~" + Math.max(1, Math.round(r0.duration / 60)) + " мин";
-}
-}
-};
-await drawCar(driverLat, driverLon);
-if (currentOrderId) {
-mapTrackTimer = setInterval(async () => {
-if (document.getElementById("map-modal").classList.contains("hidden")) { clearInterval(mapTrackTimer); return; }
-const ord = await fsGet("orders/" + currentOrderId);
-if (ord) {
-const nLat = parseFloat(ord.driverLat), nLon = parseFloat(ord.driverLon);
-if (!isNaN(nLat) && !isNaN(nLon)) await drawCar(nLat, nLon);
-}
-}, 4000);
-}
-}
-});
-}, 120);
-}
-document.getElementById("close-map-btn").addEventListener("click", () => {
-if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
-if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
-document.getElementById("map-modal").classList.add("hidden");
-});
-```html
+                                infoEl.innerHTML = label + ": <b style='color:#38BDF8'>" + km + " км</b> • ~" + min + " мин";
+                            }
+                        }
+                    };
+
+                    if (myLoc) await updateNav(myLoc.lat, myLoc.lon);
+                    else if (ptA) map3d.easeTo({ center: [ptA.lon, ptA.lat], zoom: 16, pitch: 60 });
+
+                    if (navigator.geolocation) {
+                        mapGeoWatchId = navigator.geolocation.watchPosition(
+                            pos => updateNav(pos.coords.latitude, pos.coords.longitude),
+                            () => {},
+                            { enableHighAccuracy: true, maximumAge: 2500 }
+                        );
+                    }
+                } else if (driverLat !== null && driverLon !== null) {
+                    if (initLat && initLon) new maplibregl.Marker({ element: makeIconPin(PERSON_SVG, "#10B981", "#ffffff") }).setLngLat([initLon, initLat]).addTo(map3d);
+                    const drawCar = async (lat, lon) => {
+                        if (!carMarker) carMarker = new maplibregl.Marker({ element: makeBadge("АВТО", "#A855F7", "#38BDF8") }).setLngLat([lon, lat]).addTo(map3d);
+                        else carMarker.setLngLat([lon, lat]);
+                        if (initLat && initLon) {
+                            const rd = await fetch(S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + initLon + "," + initLat + "?overview=full&geometries=geojson").then(r => r.json());
+                            if (rd.routes && rd.routes.length) {
+                                const r0 = rd.routes.at(0);
+                                setLine("route-cur", "#38BDF8", r0.geometry.coordinates);
+                                smartZoom(r0.distance, initLon, initLat, r0.geometry.coordinates);
+                                if (r0.distance > 100000) infoEl.innerHTML = "Автомобиль в пути • <b style='color:#38BDF8'>Ухта</b>";
+                                else infoEl.innerHTML = "Автомобиль в пути: <b style='color:#38BDF8'>" + (r0.distance / 1000).toFixed(1) + " км</b> • ~" + Math.max(1, Math.round(r0.duration / 60)) + " мин";
+                            }
+                        }
+                    };
+                    await drawCar(driverLat, driverLon);
+                    if (currentOrderId) {
+                        mapTrackTimer = setInterval(async () => {
+                            if (document.getElementById("map-modal").classList.contains("hidden")) { clearInterval(mapTrackTimer); return; }
+                            const ord = await fsGet("orders/" + currentOrderId);
+                            if (ord) {
+                                const nLat = parseFloat(ord.driverLat), nLon = parseFloat(ord.driverLon);
+                                if (!isNaN(nLat) && !isNaN(nLon)) await drawCar(nLat, nLon);
+                            }
+                        }, 4000);
+                    }
+                }
+            });
+        }, 120);
+    }
+
+    document.getElementById("close-map-btn").addEventListener("click", () => {
+        if (mapTrackTimer) { clearInterval(mapTrackTimer); mapTrackTimer = null; }
+        if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
+        document.getElementById("map-modal").classList.add("hidden");
+    });
     let step = 0, fromAddr = "", toAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null;
     let isDriver = false, isRegisterMode = false, pollTimer = null, gpsTimer = null, waitTimer = null;
     let lastDriverLat = null, lastDriverLon = null, orderStatus = "searching", arrivedAt = 0, clientComing = "", arrivedNotified = false;
@@ -510,13 +508,13 @@ document.getElementById("map-modal").classList.add("hidden");
                 const mm = String(Math.floor(left / 60)).padStart(2, "0");
                 const ss = String(left % 60).padStart(2, "0");
                 el.style.color = "#38BDF8";
-                el.innerText = `Бесплатное ожидание: ${mm}:${ss}`;
+                el.innerText = "Бесплатное ожидание: " + mm + ":" + ss;
             } else {
                 const paid = elapsed - 180;
                 const mm = String(Math.floor(paid / 60)).padStart(2, "0");
                 const ss = String(paid % 60).padStart(2, "0");
                 el.style.color = "#D946EF";
-                el.innerText = `Платное ожидание: +${mm}:${ss}`;
+                el.innerText = "Платное ожидание: +" + mm + ":" + ss;
             }
         };
         tick();
@@ -539,7 +537,6 @@ document.getElementById("map-modal").classList.add("hidden");
         addMsg("Привет! Это АвтоПульс. Откуда вас забрать?", false);
         updateControls();
     }
-
     async function handleSend() {
         const text = chatInput.value.trim();
         if (!text) return;
@@ -570,8 +567,9 @@ document.getElementById("map-modal").classList.add("hidden");
             }
         }
         updateControls();
-    }    
-        document.getElementById("map-driver-btn").addEventListener("click", () => {
+    }
+
+    document.getElementById("map-driver-btn").addEventListener("click", () => {
         if (lastDriverLat !== null && lastDriverLon !== null) {
             openInAppMap({ title: "3D-Маршрут водителя к вам", orderStatus: orderStatus, driverLat: lastDriverLat, driverLon: lastDriverLon });
         }
@@ -625,15 +623,7 @@ document.getElementById("map-modal").classList.add("hidden");
                 pending.forEach(o => {
                     const card = document.createElement("div");
                     card.className = "offer-card";
-                    card.innerHTML = `
-                        <div>
-                            <div style="font-weight:800; font-size:19px; color:#38BDF8;">${o.price} ₽</div>
-                            <div style="font-size:12px; color:#ccc;">Водитель готов выехать</div>
-                        </div>
-                        <div style="display:flex; gap:6px;">
-                            <button type="button" class="btn btn-outline-purple" style="padding:8px 10px; font-size:13px;" onclick="declineOffer('${o.id}', '${o.price}')">Отказать</button>
-                            <button type="button" class="btn btn-blue" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer('${o.id}', '${o.price}', '${o.driverPhone}')">Согласен</button>
-                        </div>`;
+                    card.innerHTML = '<div><div style="font-weight:800; font-size:19px; color:#38BDF8;">' + o.price + ' ₽</div><div style="font-size:12px; color:#ccc;">Водитель готов выехать</div></div><div style="display:flex; gap:6px;"><button type="button" class="btn btn-outline-purple" style="padding:8px 10px; font-size:13px;" onclick="declineOffer(\'' + o.id + '\', \'' + o.price + '\')">Отказать</button><button type="button" class="btn btn-blue" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer(\'' + o.id + '\', \'' + o.price + '\', \'' + o.driverPhone + '\')">Согласен</button></div>';
                     list.appendChild(card);
                 });
                 document.getElementById("offers-container").classList.toggle("hidden", pending.length === 0);
@@ -642,11 +632,10 @@ document.getElementById("map-modal").classList.add("hidden");
         check();
         pollTimer = setInterval(check, 2500);
     }
-
     async function declineOffer(offerId, price) {
         if (!currentOrderId) return;
         await fsPatch("orders/" + currentOrderId + "/offers/" + offerId, { status: "declined" });
-        addMsg(`Отказался от цены ${price} ₽. Ждем другие варианты...`, false);
+        addMsg("Отказался от цены " + price + " ₽. Ждем другие варианты...", false);
     }
 
     async function acceptOffer(offerId, price, dPhone) {
@@ -659,13 +648,14 @@ document.getElementById("map-modal").classList.add("hidden");
         selectedDriverPhone = dPhone;
         orderStatus = "accepted";
         document.getElementById("offers-container").classList.add("hidden");
-        addMsg(`Выбрал поездку за ${price} ₽!`, true);
+        addMsg("Выбрал поездку за " + price + " ₽!", true);
         addMsg("Отлично! Водитель принял заявку и уже выехал к вам.", false);
         const cleanPhone = selectedDriverPhone.replace(/[^\d+]/g, "");
         document.getElementById("call-driver-btn").href = "tel:" + cleanPhone;
         step = 5;
         updateControls();
     }
+
     let autoOpenedOrderId = "";
 
     function openFullRoute(fromAddrStr, toAddrStr, statusStr, cLatStr, cLonStr) {
@@ -682,7 +672,6 @@ document.getElementById("map-modal").classList.add("hidden");
     async function markDriverArrived(orderId) {
         await fsPatch("orders/" + orderId, { status: "arrived", arrivedAt: Date.now() });
     }
-
     function startDriverPolling() {
         stopTimers();
         const driverBox = document.getElementById("driver-box");
@@ -735,56 +724,45 @@ document.getElementById("map-modal").classList.add("hidden");
                 if (isMine) {
                     const isArr = o.status === "arrived";
                     badgeHtml = isArr
-                        ? `<span class="status-pill" style="background:rgba(16,185,129,0.2);color:#10B981;border:1px solid #10B981;">НА МЕСТЕ</span>`
-                        : `<span class="status-pill" style="background:rgba(56,189,248,0.2);color:#38BDF8;border:1px solid #38BDF8;">К ПАССАЖИРУ</span>`;
+                        ? '<span class="status-pill" style="background:rgba(16,185,129,0.2);color:#10B981;border:1px solid #10B981;">НА МЕСТЕ</span>'
+                        : '<span class="status-pill" style="background:rgba(56,189,248,0.2);color:#38BDF8;border:1px solid #38BDF8;">К ПАССАЖИРУ</span>';
 
                     const cleanClient = (o.phone || "").replace(/[^\d+]/g, "");
                     const safeFrom = (o.from || "").replace(/'/g, "");
                     const safeTo = (o.to || "").replace(/'/g, "");
                     const comingHtml = o.clientComing === "yes"
-                        ? `<div style="background:rgba(16,185,129,0.18);border:1px solid #10B981;border-radius:10px;padding:8px;color:#10B981;font-weight:800;font-size:14px;margin-bottom:8px;">Пассажир нажал «Выхожу»!</div>`
+                        ? '<div style="background:rgba(16,185,129,0.18);border:1px solid #10B981;border-radius:10px;padding:8px;color:#10B981;font-weight:800;font-size:14px;margin-bottom:8px;">Пассажир нажал «Выхожу»!</div>'
                         : "";
                     const arrivedBtnHtml = !isArr
-                        ? `<button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="markDriverArrived('${o.id}')">Я на месте (Ожидание 3 мин)</button>`
+                        ? '<button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="markDriverArrived(\'' + o.id + '\')">Я на месте (Ожидание 3 мин)</button>'
                         : "";
 
-                    actionHtml = `
-                        <p style="color:#10B981; font-weight:bold; margin-bottom:8px;">Заказ принят • Цена: ${o.price} ₽</p>
-                        ${comingHtml}
-                        <button type="button" class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="openFullRoute('${safeFrom}', '${safeTo}', '${o.status}', '${o.clientLat || ""}', '${o.clientLon || ""}')">Открыть 3D-маршрут</button>
-                        ${arrivedBtnHtml}
-                        <a href="tel:${cleanClient}" class="btn btn-outline-blue" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>
-                        <button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder('${o.id}')">Завершить поездку</button>`;
+                    actionHtml = '<p style="color:#10B981; font-weight:bold; margin-bottom:8px;">Заказ принят • Цена: ' + o.price + ' ₽</p>' +
+                        comingHtml +
+                        '<button type="button" class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="openFullRoute(\'' + safeFrom + '\', \'' + safeTo + '\', \'' + o.status + '\', \'' + (o.clientLat || "") + '\', \'' + (o.clientLon || "") + '\')">Открыть 3D-маршрут</button>' +
+                        arrivedBtnHtml +
+                        '<a href="tel:' + cleanClient + '" class="btn btn-outline-blue" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>' +
+                        '<button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder(\'' + o.id + '\')">Завершить поездку</button>';
                 } else {
                     const offers = await fsList("orders/" + o.id + "/offers");
                     const myOffer = offers.find(off => off.driverPhone === driverPhone);
                     if (myOffer) {
                         if (myOffer.status === "pending") {
-                            actionHtml = `<p style="color:#D946EF; font-size:14px;">Ваша цена ${myOffer.price} ₽ отправлена. Ждем ответа...</p>`;
+                            actionHtml = '<p style="color:#D946EF; font-size:14px;">Ваша цена ' + myOffer.price + ' ₽ отправлена. Ждем ответа...</p>';
                         } else if (myOffer.status === "declined") {
-                            actionHtml = `
-                                <p style="color:#F43F5E; font-size:13px; margin-bottom:6px;">Пассажир отказался от ${myOffer.price} ₽. Предложите другую:</p>
-                                <div style="display:flex; gap:8px;">
-                                    <input type="number" id="price-${o.id}" placeholder="Новая цена (₽)">
-                                    <button type="button" class="btn" onclick="updateOffer('${o.id}', '${myOffer.id}')">Предложить</button>
-                                </div>`;
+                            actionHtml = '<p style="color:#F43F5E; font-size:13px; margin-bottom:6px;">Пассажир отказался от ' + myOffer.price + ' ₽. Предложите другую:</p><div style="display:flex; gap:8px;"><input type="number" id="price-' + o.id + '" placeholder="Новая цена (₽)"><button type="button" class="btn" onclick="updateOffer(\'' + o.id + '\', \'' + myOffer.id + '\')">Предложить</button></div>';
                         }
                     } else {
-                        actionHtml = `
-                            <div style="display:flex; gap:8px;">
-                                <input type="number" id="price-${o.id}" placeholder="Ваша цена (₽)">
-                                <button type="button" class="btn" onclick="createOffer('${o.id}')">Предложить</button>
-                            </div>`;
+                        actionHtml = '<div style="display:flex; gap:8px;"><input type="number" id="price-' + o.id + '" placeholder="Ваша цена (₽)"><button type="button" class="btn" onclick="createOffer(\'' + o.id + '\')">Предложить</button></div>';
                     }
                 }
-                html += `<div class="card ${isMine ? 'accepted' : ''}"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пассажир (А): ${o.from}</strong>${badgeHtml}</div><strong>Назначение (Б): ${o.to}</strong><span style="color:#38BDF8; font-weight:600;">Телефон: ${o.phone}</span><div style="margin-top:8px;">${actionHtml}</div></div>`;
+                html += '<div class="card ' + (isMine ? 'accepted' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пассажир (А): ' + o.from + '</strong>' + badgeHtml + '</div><strong>Назначение (Б): ' + o.to + '</strong><span style="color:#38BDF8; font-weight:600;">Телефон: ' + o.phone + '</span><div style="margin-top:8px;">' + actionHtml + '</div></div>';
             }
-            driverBox.innerHTML = count > 0 ? html : `<p style="text-align:center; color:#D946EF; margin-top:40px;">Пока нет активных заявок</p>`;
+            driverBox.innerHTML = count > 0 ? html : '<p style="text-align:center; color:#D946EF; margin-top:40px;">Пока нет активных заявок</p>';
         };
         refresh();
         pollTimer = setInterval(refresh, 3000);
     }
-
     async function createOffer(orderId) {
         const inp = document.getElementById("price-" + orderId);
         if (inp && inp.value.trim()) {
@@ -804,6 +782,7 @@ document.getElementById("map-modal").classList.add("hidden");
     async function completeOrder(id) {
         await fsDelete("orders/" + id);
     }
+
     document.getElementById("send-btn").addEventListener("click", handleSend);
     chatInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleSend(); });
     document.getElementById("new-order-btn").addEventListener("click", resetChat);
@@ -825,7 +804,6 @@ document.getElementById("map-modal").classList.add("hidden");
         localStorage.setItem("autopulse_rules_v1", "1");
         rulesModal.classList.add("hidden");
     });
-
     const pinModal = document.getElementById("pin-modal");
     const pinErr = document.getElementById("pin-error");
 
@@ -839,13 +817,13 @@ document.getElementById("map-modal").classList.add("hidden");
             btn.className = "btn " + (isSel ? "btn-blue" : "btn-outline-purple");
             btn.style.padding = "10px 6px";
             btn.style.fontSize = "13px";
-            btn.innerText = `${p.label} • ${p.price} ₽`;
+            btn.innerText = p.label + " • " + p.price + " ₽";
             btn.onclick = () => { selectedPlan = p; renderPlans(phone); };
             grid.appendChild(btn);
         });
         const payBtn = document.getElementById("robokassa-pay-btn");
-        payBtn.innerText = `Оплатить ${selectedPlan.price} ₽ (${selectedPlan.label})`;
-        payBtn.href = `${PAY_WORKER_URL}?phone=${encodeURIComponent(phone)}&days=${selectedPlan.days}&sum=${selectedPlan.price}`;
+        payBtn.innerText = "Оплатить " + selectedPlan.price + " ₽ (" + selectedPlan.label + ")";
+        payBtn.href = PAY_WORKER_URL + "?phone=" + encodeURIComponent(phone) + "&days=" + selectedPlan.days + "&sum=" + selectedPlan.price;
     }
 
     function showPlansStep(phone) {
@@ -878,7 +856,6 @@ document.getElementById("map-modal").classList.add("hidden");
         isRegisterMode = false;
         updatePinModalUI();
     });
-
     document.getElementById("toggle-mode-btn").addEventListener("click", () => {
         if (isDriver) {
             isDriver = false;
