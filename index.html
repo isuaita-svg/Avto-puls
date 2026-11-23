@@ -308,8 +308,8 @@
             infoEl.innerText = "Не удалось загрузить 3D-карту. Проверьте интернет.";
             return;
         }
-        setTimeout(async () => {
-            if (map3d) { map3d.remove(); map3d = null; }
+               setTimeout(async () => {
+            if (map3d) { try { map3d.remove(); } catch (_) {} map3d = null; }
             map3d = new maplibregl.Map({
                 container: "inapp-map",
                 style: S + "tiles.openfreemap.org/styles/dark",
@@ -320,10 +320,6 @@
                 attributionControl: false,
                 antialias: true
             });
-
-            const myLoc = await getBrowserLocation();
-            const initLat = driverLat || (myLoc && myLoc.lat) || null;
-            const initLon = driverLon || (myLoc && myLoc.lon) || null;
 
             const CAR_SVG = '<path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>';
             const PERSON_SVG = '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>';
@@ -343,31 +339,11 @@
                 return el;
             }
 
-            async function geocode(q) {
-                if (!q) return null;
-                try {
-                    const ctrl = new AbortController();
-                    const t = setTimeout(() => ctrl.abort(), 3500);
-                    const r = await fetch(S + "photon.komoot.io/api/?q=" + encodeURIComponent(q) + "&lat=63.567&lon=53.683&limit=1", { signal: ctrl.signal });
-                    clearTimeout(t);
-                    const res = await r.json();
-                    if (res && res.features && res.features.length) {
-                        const c = res.features.at(0).geometry.coordinates;
-                        return { lat: parseFloat(c.at(1)), lon: parseFloat(c.at(0)) };
-                    }
-                } catch (_) {}
-                try {
-                    const r2 = await fetch(S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q));
-                    const res2 = await r2.json();
-                    if (res2 && res2.length) return { lat: parseFloat(res2.at(0).lat), lon: parseFloat(res2.at(0).lon) };
-                } catch (_) {}
-                return null;
-            }
             function apply3DTheme() {
                 try {
+                    if (!map3d || !map3d.isStyleLoaded()) return;
                     map3d.setLight({ anchor: "viewport", color: "#FFFFFF", intensity: 0.95 });
                     const st = map3d.getStyle();
-                    if (!st || !st.layers) return;
                     let bldSource = "openmaptiles";
                     st.layers.forEach(l => {
                         try {
@@ -397,13 +373,47 @@
             }
 
             map3d.on("styledata", apply3DTheme);
+            map3d.on("idle", apply3DTheme);
 
-            map3d.on("load", async () => {
-                apply3DTheme();
+            async function fetchJsonTimeout(url, ms) {
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), ms);
+                try {
+                    const r = await fetch(url, { signal: ctrl.signal });
+                    clearTimeout(timer);
+                    if (!r.ok) return null;
+                    return await r.json();
+                } catch (_) {
+                    clearTimeout(timer);
+                    return null;
+                }
+            }
 
-                const ptA = await geocode(pointA);
-                const ptEx = await geocode(extraStop);
-                const ptB = await geocode(pointB);
+            async function geocode(q) {
+                if (!q) return null;
+                const res1 = await fetchJsonTimeout(S + "photon.komoot.io/api/?q=" + encodeURIComponent(q) + "&lat=63.567&lon=53.683&limit=1", 3000);
+                if (res1 && res1.features && res1.features.length) {
+                    const c = res1.features.at(0).geometry.coordinates;
+                    return { lat: parseFloat(c.at(1)), lon: parseFloat(c.at(0)) };
+                }
+                const res2 = await fetchJsonTimeout(S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q), 3000);
+                if (res2 && res2.length) {
+                    return { lat: parseFloat(res2.at(0).lat), lon: parseFloat(res2.at(0).lon) };
+                }
+                return null;
+            }
+
+            try {
+                infoEl.innerText = "Ищем адреса на карте...";
+                const myLoc = await getBrowserLocation();
+                const initLat = driverLat || (myLoc && myLoc.lat) || null;
+                const initLon = driverLon || (myLoc && myLoc.lon) || null;
+
+                const [ptA, ptEx, ptB] = await Promise.all([
+                    geocode(pointA),
+                    geocode(extraStop),
+                    geocode(pointB)
+                ]);
 
                 if (ptA) new maplibregl.Marker({ element: makeIconPin(PERSON_SVG, "#38BDF8", "#0B0F22") }).setLngLat([ptA.lon, ptA.lat]).addTo(map3d);
                 if (ptEx) new maplibregl.Marker({ element: makeBadge("ЗАЕЗД", "#F59E0B", "#ffffff") }).setLngLat([ptEx.lon, ptEx.lat]).addTo(map3d);
@@ -412,24 +422,27 @@
                 const targetPt = (stage === 1) ? ptA : (stage === 2 ? ptEx : ptB);
                 const stageLabel = (stage === 1) ? "Этап 1 • К пассажиру" : (stage === 2 ? "Этап 2 • На заезд" : "Финал • В точку Б");
 
-                if (!targetPt) { infoEl.innerText = "Адрес не найден на карте"; return; }
+                if (!targetPt) {
+                    infoEl.innerText = stageLabel + " • Откройте кнопку «Навигатор» ниже";
+                    return;
+                }
 
                 let carMarker = null, firstFit = true;
                 async function updateLeg(lat, lon) {
                     if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) {
                         map3d.easeTo({ center: [targetPt.lon, targetPt.lat], zoom: 16.5, pitch: 60 });
-                        infoEl.innerText = stageLabel + " (включите геолокацию)";
+                        infoEl.innerHTML = stageLabel + ": <b style='color:#38BDF8'>точка отмечена на карте</b>";
                         return;
                     }
                     if (!carMarker) carMarker = new maplibregl.Marker({ element: makeIconPin(CAR_SVG, "#10B981", "#ffffff") }).setLngLat([lon, lat]).addTo(map3d);
                     else carMarker.setLngLat([lon, lat]);
 
-                    const r = await fetch(S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + targetPt.lon + "," + targetPt.lat + "?overview=full&geometries=geojson").then(res => res.json());
-                    if (r.routes && r.routes.length) {
+                    const r = await fetchJsonTimeout(S + "router.project-osrm.org/route/v1/driving/" + lon + "," + lat + ";" + targetPt.lon + "," + targetPt.lat + "?overview=full&geometries=geojson", 3500);
+                    if (r && r.routes && r.routes.length) {
                         const r0 = r.routes.at(0), coords = r0.geometry.coordinates;
                         const data = { type: "Feature", geometry: { type: "LineString", coordinates: coords } };
                         if (map3d.getSource("leg")) map3d.getSource("leg").setData(data);
-                        else {
+                        else if (map3d.isStyleLoaded()) {
                             map3d.addSource("leg", { type: "geojson", data: data });
                             map3d.addLayer({ id: "leg-line", type: "line", source: "leg", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#38BDF8", "line-width": 6 } });
                         }
@@ -440,6 +453,9 @@
                         }
                         const km = (r0.distance / 1000).toFixed(1), min = Math.max(1, Math.round(r0.duration / 60));
                         infoEl.innerHTML = stageLabel + ": <b style='color:#38BDF8'>" + km + " км</b> • ~" + min + " мин";
+                    } else {
+                        map3d.easeTo({ center: [targetPt.lon, targetPt.lat], zoom: 16.5, pitch: 60 });
+                        infoEl.innerHTML = stageLabel + ": <b style='color:#38BDF8'>маркеры на карте</b>";
                     }
                 }
 
@@ -451,9 +467,12 @@
                         { enableHighAccuracy: true, maximumAge: 2500 }
                     );
                 }
-            });
+            } catch (err) {
+                infoEl.innerText = "Карта готова • Нажмите «Навигатор» ниже";
+            }
         }, 120);
     }
+
 
     document.getElementById("close-map-btn").addEventListener("click", () => {
         if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
@@ -1016,3 +1035,4 @@
 </script>
 </body>
 </html>
+
