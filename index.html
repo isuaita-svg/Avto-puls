@@ -9,39 +9,38 @@
     <title>АвтоПульс • Ухта</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #060812; color: #ffffff; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
-        header { background-color: #0B0F22; padding: 12px 14px 6px; display: flex; justify-content: space-between; align-items: center; }
+        body { background-color: #0C0306; color: #ffffff; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+        header { background-color: #17050A; padding: 12px 14px 6px; display: flex; justify-content: space-between; align-items: center; }
         .brand-wrap { display: flex; align-items: center; gap: 8px; }
-        header h1 { font-size: 20px; font-weight: 800; font-style: italic; letter-spacing: 0.5px; color: #fff; text-shadow: 0 0 12px rgba(168,85,247,0.7); }
-        header h1 span { color: #A855F7; }
-        .badge-driver { font-size: 10px; font-weight: 700; color: #38BDF8; border: 1px solid #38BDF8; background: rgba(56,189,248,0.12); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
+        header h1 { font-size: 20px; font-weight: 800; font-style: italic; letter-spacing: 0.5px; color: #fff; text-shadow: 0 0 12px rgba(255,30,66,0.8); }
+        header h1 span { color: #FF1E42; }
+        .badge-driver { font-size: 10px; font-weight: 700; color: #FF5C77; border: 1px solid #FF5C77; background: rgba(255,30,66,0.18); padding: 2px 6px; border-radius: 6px; white-space: nowrap; }
         .header-actions { display: flex; align-items: center; gap: 8px; }
-        .link-btn { background: none; border: none; color: #38BDF8; font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px; }
-        .speed-bar { background: #0B0F22; width: 100%; height: 10px; display: block; border-bottom: 1px solid rgba(168,85,247,0.25); }
+        .link-btn { background: none; border: none; color: #FF5C77; font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px; }
+        .speed-bar { background: #17050A; width: 100%; height: 10px; display: block; border-bottom: 1px solid rgba(255,30,66,0.3); }
         #chat-box, #driver-box { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
         .msg { max-width: 82%; padding: 11px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; word-wrap: break-word; }
-        .msg.bot { background-color: #101630; color: #ffffff; align-self: flex-start; border: 1.2px solid rgba(56,189,248,0.6); box-shadow: 0 0 10px rgba(56,189,248,0.12); }
-        .msg.user { background-color: rgba(168,85,247,0.25); color: #ffffff; align-self: flex-end; border: 1.2px solid #A855F7; box-shadow: 0 0 10px rgba(168,85,247,0.25); }
-        #offers-container { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 44vh; overflow-y: auto; background: #0B0F22; border-top: 1px solid rgba(168,85,247,0.45); }
-        .offer-card { background: #101630; border: 1.5px solid #A855F7; padding: 12px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; box-shadow: 0 0 12px rgba(168,85,247,0.25); }
-        .bottom-bar { background-color: #0B0F22; padding: 10px 12px; border-top: 1px solid rgba(168,85,247,0.3); display: flex; gap: 8px; }
-        input { flex: 1; background-color: #101630; border: 1.2px solid rgba(168,85,247,0.55); border-radius: 14px; padding: 12px; color: #fff; font-size: 15px; outline: none; }
-        input:focus { border-color: #38BDF8; box-shadow: 0 0 8px rgba(56,189,248,0.35); }
-        .btn { background-color: #A855F7; color: #fff; border: 1.5px solid #A855F7; border-radius: 14px; padding: 10px 15px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; display: inline-block; box-shadow: 0 0 12px rgba(168,85,247,0.4); }
-        .btn-blue { background-color: #38BDF8; color: #000; border-color: #38BDF8; box-shadow: 0 0 12px rgba(56,189,248,0.4); }
+        .msg.bot { background-color: #220810; color: #ffffff; align-self: flex-start; border: 1.2px solid rgba(255,92,119,0.65); box-shadow: 0 0 10px rgba(255,30,66,0.18); }
+        .msg.user { background-color: rgba(255,30,66,0.25); color: #ffffff; align-self: flex-end; border: 1.2px solid #FF1E42; box-shadow: 0 0 12px rgba(255,30,66,0.35); }
+        #offers-container { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 44vh; overflow-y: auto; background: #17050A; border-top: 1px solid rgba(255,30,66,0.5); }
+        .offer-card { background: #220810; border: 1.5px solid #FF1E42; padding: 12px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; box-shadow: 0 0 14px rgba(255,30,66,0.3); }
+        .bottom-bar { background-color: #17050A; padding: 10px 12px; border-top: 1px solid rgba(255,30,66,0.35); display: flex; gap: 8px; }
+        input { flex: 1; background-color: #220810; border: 1.2px solid rgba(255,30,66,0.55); border-radius: 14px; padding: 12px; color: #fff; font-size: 15px; outline: none; }
+        input:focus { border-color: #FF5C77; box-shadow: 0 0 10px rgba(255,92,119,0.45); }
+        .btn { background-color: #FF1E42; color: #fff; border: 1.5px solid #FF1E42; border-radius: 14px; padding: 10px 15px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; display: inline-block; box-shadow: 0 0 14px rgba(255,30,66,0.45); }
+        .btn-coral { background-color: #FF5C77; color: #fff; border-color: #FF5C77; box-shadow: 0 0 14px rgba(255,92,119,0.45); }
         .btn-green { background-color: #10B981; color: #000; border-color: #10B981; box-shadow: 0 0 12px rgba(16,185,129,0.35); }
-        .btn-purple-bright { background-color: #D946EF; color: #fff; border-color: #D946EF; box-shadow: 0 0 12px rgba(217,70,239,0.4); }
-        .btn-outline-purple { background: #101630; border: 1.5px solid #A855F7; color: #fff; box-shadow: 0 0 8px rgba(168,85,247,0.25); }
-        .btn-outline-blue { background: #101630; border: 1.5px solid #38BDF8; color: #fff; box-shadow: 0 0 8px rgba(56,189,248,0.25); }
-        .card { background-color: #101630; border-radius: 18px; padding: 16px; border: 1.5px solid #A855F7; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 0 14px rgba(168,85,247,0.25); }
-        .card.accepted { border-color: #38BDF8; box-shadow: 0 0 14px rgba(56,189,248,0.25); }
+        .btn-red-bright { background-color: #FF0A37; color: #fff; border-color: #FF0A37; box-shadow: 0 0 16px rgba(255,10,55,0.55); }
+        .btn-outline-red { background: #220810; border: 1.5px solid #FF1E42; color: #fff; box-shadow: 0 0 10px rgba(255,30,66,0.3); }
+        .btn-outline-coral { background: #220810; border: 1.5px solid #FF5C77; color: #fff; box-shadow: 0 0 10px rgba(255,92,119,0.3); }
+        .card { background-color: #220810; border-radius: 18px; padding: 16px; border: 1.5px solid #FF1E42; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 0 16px rgba(255,30,66,0.3); }
+        .card.accepted { border-color: #FF5C77; box-shadow: 0 0 18px rgba(255,92,119,0.4); }
         .status-pill { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 8px; white-space: nowrap; }
         .hidden { display: none !important; }
-        .modal { position: fixed; inset: 0; background: rgba(6,8,18,0.9); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
-        .modal-content { background: #0B0F22; border: 1.5px solid #A855F7; box-shadow: 0 0 24px rgba(168,85,247,0.35); padding: 18px; border-radius: 20px; width: 100%; max-width: 390px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .modal-content.blue-border { border-color: #38BDF8; box-shadow: 0 0 24px rgba(56,189,248,0.3); }
+        .modal { position: fixed; inset: 0; background: rgba(12,3,6,0.92); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+        .modal-content { background: #17050A; border: 1.5px solid #FF1E42; box-shadow: 0 0 28px rgba(255,30,66,0.45); padding: 18px; border-radius: 20px; width: 100%; max-width: 390px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0; }
-        #inapp-map { width: 100%; height: 340px; border-radius: 14px; border: 1.2px solid #38BDF8; background: #060812; overflow: hidden; }
+        #inapp-map { width: 100%; height: 340px; border-radius: 14px; border: 1.2px solid #FF1E42; background: #0C0306; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -53,61 +52,60 @@
     </div>
     <div class="header-actions">
         <button type="button" class="link-btn" id="open-rules-btn">Правила</button>
-        <button type="button" class="btn btn-outline-purple" style="padding:7px 12px; font-size:13px;" id="toggle-mode-btn">Водитель</button>
+        <button type="button" class="btn btn-outline-red" style="padding:7px 12px; font-size:13px;" id="toggle-mode-btn">Водитель</button>
     </div>
 </header>
 <svg class="speed-bar" viewBox="0 0 360 10" preserveAspectRatio="none">
     <defs>
         <linearGradient id="speedGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#D946EF"/>
-            <stop offset="50%" stop-color="#A855F7"/>
-            <stop offset="100%" stop-color="#38BDF8"/>
+            <stop offset="0%" stop-color="#FF0A37"/>
+            <stop offset="50%" stop-color="#FF1E42"/>
+            <stop offset="100%" stop-color="#FF5C77"/>
         </linearGradient>
     </defs>
     <line x1="0" y1="3" x2="360" y2="3" stroke="url(#speedGrad)" stroke-width="2.5"/>
-    <line x1="70" y1="8" x2="360" y2="8" stroke="#38BDF8" stroke-width="1" opacity="0.6"/>
+    <line x1="70" y1="8" x2="360" y2="8" stroke="#FF5C77" stroke-width="1" opacity="0.65"/>
 </svg>
 
 <div id="chat-box"></div>
 
 <div id="offers-container" class="hidden">
-    <span style="font-size: 14px; color: #38BDF8; font-weight: 700;">Предложения от водителей:</span>
+    <span style="font-size: 14px; color: #FF5C77; font-weight: 700;">Предложения от водителей:</span>
     <div id="offers-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
 </div>
 
 <div id="extra-stop-choice" class="bottom-bar hidden">
-    <button type="button" class="btn btn-blue" id="no-extra-btn" style="flex:1;">Нет, сразу в точку Б</button>
-    <button type="button" class="btn btn-outline-purple" id="add-extra-btn" style="flex:1;">Добавить адрес</button>
+    <button type="button" class="btn" id="no-extra-btn" style="flex:1;">Нет, сразу в точку Б</button>
+    <button type="button" class="btn btn-outline-coral" id="add-extra-btn" style="flex:1;">Добавить адрес</button>
 </div>
 
 <div id="passenger-controls" class="bottom-bar">
     <input type="text" id="chat-input" placeholder="Откуда забрать (точка А)...">
     <button type="button" class="btn" id="send-btn">Отпр.</button>
 </div>
-
 <div id="active-controls" class="bottom-bar hidden" style="flex-direction: column;">
-    <div id="driver-track-card" class="hidden" style="background:#101630; border:1.2px solid #38BDF8; border-radius:14px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+    <div id="driver-track-card" class="hidden" style="background:#220810; border:1.2px solid #FF5C77; border-radius:14px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-            <div style="color:#38BDF8; font-weight:700; font-size:14px;">Водитель в пути</div>
+            <div style="color:#FF5C77; font-weight:700; font-size:14px;">Водитель в пути</div>
             <div id="driver-dist-text" style="color:#fff; font-size:13px;">Определяем координаты...</div>
         </div>
-        <button type="button" id="map-driver-btn" class="btn btn-blue hidden" style="padding:8px 12px; font-size:13px;">На карте</button>
+        <button type="button" id="map-driver-btn" class="btn hidden" style="padding:8px 12px; font-size:13px;">На карте</button>
     </div>
-    <div id="arrived-card" class="hidden" style="background:#101630; border:1.5px solid #10B981; border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+    <div id="arrived-card" class="hidden" style="background:#220810; border:1.5px solid #10B981; border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:8px;">
         <div style="color:#10B981; font-weight:800; font-size:16px;">Водитель на месте!</div>
-        <div id="wait-timer-text" style="color:#38BDF8; font-weight:700; font-size:15px;">Бесплатное ожидание: 03:00</div>
+        <div id="wait-timer-text" style="color:#FF5C77; font-weight:700; font-size:15px;">Бесплатное ожидание: 03:00</div>
         <button type="button" id="coming-out-btn" class="btn btn-green" style="width:100%;">Выхожу</button>
         <div id="coming-out-ack" class="hidden" style="color:#ccc; font-size:13px;">Водитель предупреждён, что вы выходите</div>
     </div>
-    <div id="intransit-card" class="hidden" style="background:#101630; border:1.5px solid #D946EF; border-radius:14px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+    <div id="intransit-card" class="hidden" style="background:#220810; border:1.5px solid #FF0A37; border-radius:14px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-            <div id="intransit-title-text" style="color:#D946EF; font-weight:800; font-size:14px;">В пути в точку Б</div>
+            <div id="intransit-title-text" style="color:#FF5C77; font-weight:800; font-size:14px;">В пути в точку Б</div>
             <div id="intransit-dest-text" style="color:#fff; font-size:13px;">Маршрут активен</div>
         </div>
-        <button type="button" id="map-transit-btn" class="btn btn-blue" style="padding:8px 12px; font-size:13px;">На карте</button>
+        <button type="button" id="map-transit-btn" class="btn" style="padding:8px 12px; font-size:13px;">На карте</button>
     </div>
     <a id="call-driver-btn" href="#" class="btn btn-green hidden" style="width: 100%;">Позвонить водителю</a>
-    <button type="button" class="btn btn-outline-purple" id="cancel-order-btn" style="width: 100%;">Отменить заявку</button>
+    <button type="button" class="btn btn-outline-red" id="cancel-order-btn" style="width: 100%;">Отменить заявку</button>
 </div>
 
 <div id="new-order-controls" class="bottom-bar hidden">
@@ -115,42 +113,42 @@
 </div>
 
 <div id="driver-box" class="hidden"></div>
+
 <div id="map-modal" class="modal hidden">
-    <div class="modal-content blue-border">
-        <h3 id="map-modal-title" style="color:#38BDF8; font-size:16px;">3D-Навигация АвтоПульс</h3>
+    <div class="modal-content">
+        <h3 id="map-modal-title" style="color:#FF5C77; font-size:16px;">3D-Навигация АвтоПульс</h3>
         <div id="inapp-map"></div>
-        <div id="map-route-info" style="font-size:13px; color:#fff; text-align:center; background:#101630; padding:8px; border-radius:10px; border:1px solid #A855F7;">Строим пошаговый маршрут...</div>
-        <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-blue hidden" style="width:100%;">Навигатор: К пассажиру</a>
+        <div id="map-route-info" style="font-size:13px; color:#fff; text-align:center; background:#220810; padding:8px; border-radius:10px; border:1px solid #FF1E42;">Строим пошаговый маршрут...</div>
+        <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-coral hidden" style="width:100%;">Навигатор: К пассажиру</a>
         <button type="button" class="btn" id="close-map-btn" style="width:100%;">Закрыть карту</button>
     </div>
 </div>
-
 <div id="rules-modal" class="modal hidden">
-    <div class="modal-content blue-border">
-        <h3 style="color:#38BDF8; font-size:17px;">ПРАВИЛА СЕРВИСА АВТОПУЛЬС</h3>
-        <p style="font-size:13px; color:#D946EF; font-weight:700;">1. Статус сервиса</p>
+    <div class="modal-content">
+        <h3 style="color:#FF5C77; font-size:17px;">ПРАВИЛА СЕРВИСА АВТОПУЛЬС</h3>
+        <p style="font-size:13px; color:#FF1E42; font-weight:700;">1. Статус сервиса</p>
         <p style="font-size:13px; color:#fff; line-height:1.4;">«АвтоПульс» является исключительно информационной онлайн-площадкой для поиска попутчиков и свободных водителей. Сервис <b>НЕ является службой такси</b> или транспортной компанией и не оказывает услуги по перевозке пассажиров и багажа.</p>
-        <p style="font-size:13px; color:#D946EF; font-weight:700;">2. Ограничение ответственности</p>
+        <p style="font-size:13px; color:#FF1E42; font-weight:700;">2. Ограничение ответственности</p>
         <p style="font-size:13px; color:#ccc; line-height:1.4;">Все договоренности о цене, маршруте и условиях поездки заключаются напрямую между пассажиром и водителем. Разработчик не несет ответственности за действия сторон, безопасность поездки, а также за забытые или оставленные в автомобиле личные вещи, деньги и документы.</p>
-        <p style="font-size:13px; color:#D946EF; font-weight:700;">3. Условия доступа и реквизиты</p>
+        <p style="font-size:13px; color:#FF1E42; font-weight:700;">3. Условия доступа и реквизиты</p>
         <p style="font-size:12px; color:#bbb; line-height:1.4;">Для водителей первые 6 месяцев предоставляются бесплатно. Далее доступ продлевается по выбору: 1 день (100 ₽), 3 дня (250 ₽), 7 дней (450 ₽) или 30 дней (1200 ₽). Доступ активируется мгновенно после оплаты.<br>Исполнитель: самозанятый Плюснин Владимир Александрович • E-mail: aitaissu09@yandex.ru • г. Ухта.</p>
-        <button type="button" class="btn btn-blue" id="accept-rules-btn" style="width:100%; margin-top:4px;">Принимаю условия</button>
+        <button type="button" class="btn" id="accept-rules-btn" style="width:100%; margin-top:4px;">Принимаю условия</button>
     </div>
 </div>
 
 <div id="pin-modal" class="modal hidden">
     <div class="modal-content">
-        <h3 id="pin-modal-title" style="color:#D946EF; font-size:18px;">ВХОД ДЛЯ ВОДИТЕЛЯ</h3>
+        <h3 id="pin-modal-title" style="color:#FF5C77; font-size:18px;">ВХОД ДЛЯ ВОДИТЕЛЯ</h3>
         <p id="pin-modal-desc" style="font-size:13px; color:#ccc; line-height:1.35;">Введите ваш номер телефона и личный 4-значный PIN-код:</p>
 
         <div id="login-fields-wrap" style="display:flex; flex-direction:column; gap:10px;">
             <input type="tel" id="driver-phone-input" placeholder="Номер телефона">
             <input type="password" id="pin-input" maxlength="4" placeholder="Личный PIN-код (4 цифры)" inputmode="numeric">
-            <p id="pin-error" style="color:#F43F5E; font-size:13px;" class="hidden"></p>
+            <p id="pin-error" style="color:#FF5C77; font-size:13px;" class="hidden"></p>
             <button type="button" class="link-btn" id="switch-register-btn" style="text-align:left; padding:2px 0;">Нет PIN-кода? Получить на 6 мес. бесплатно</button>
             <div style="display: flex; gap: 8px; margin-top:4px;">
                 <button type="button" class="btn" id="login-driver-btn" style="flex: 1;">Войти</button>
-                <button type="button" class="btn btn-outline-purple" id="close-pin-btn" style="flex: 1;">Отмена</button>
+                <button type="button" class="btn btn-outline-red" id="close-pin-btn" style="flex: 1;">Отмена</button>
             </div>
         </div>
 
@@ -212,7 +210,6 @@
         }
         return res;
     }
-
     async function fsAdd(path, data) {
         const r = await fetch(fsUrl(path), {
             method: "POST",
@@ -249,6 +246,7 @@
     async function fsDelete(path) {
         await fetch(fsUrl(path), { method: "DELETE" });
     }
+
     function getBrowserLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) return resolve(null);
@@ -276,7 +274,6 @@
         if (m > 100000) return "В пути (Ухта)";
         return m < 1000 ? (m + " м от вас") : ((m / 1000).toFixed(1) + " км от вас");
     }
-
     let map3d = null;
     let mapGeoWatchId = null;
 
@@ -308,7 +305,7 @@
             infoEl.innerText = "Не удалось загрузить 3D-карту. Проверьте интернет.";
             return;
         }
-               setTimeout(async () => {
+        setTimeout(async () => {
             if (map3d) { try { map3d.remove(); } catch (_) {} map3d = null; }
             map3d = new maplibregl.Map({
                 container: "inapp-map",
@@ -348,8 +345,8 @@
                     st.layers.forEach(l => {
                         try {
                             if (l["source-layer"] === "building" && l.source) bldSource = l.source;
-                            if (l.type === "background") map3d.setPaintProperty(l.id, "background-color", "#0B112B");
-                            else if (l.type === "line" && l.id.includes("road")) map3d.setPaintProperty(l.id, "line-color", "#5B7CFA");
+                            if (l.type === "background") map3d.setPaintProperty(l.id, "background-color", "#14050A");
+                            else if (l.type === "line" && l.id.includes("road")) map3d.setPaintProperty(l.id, "line-color", "#FF4D6D");
                             else if (l.type === "symbol") map3d.setPaintProperty(l.id, "text-color", "#FFFFFF");
                         } catch (_) {}
                     });
@@ -361,7 +358,7 @@
                             type: "fill-extrusion",
                             minzoom: 13,
                             paint: {
-                                "fill-extrusion-color": "#4361EE",
+                                "fill-extrusion-color": "#B91C3C",
                                 "fill-extrusion-height": ["*", ["coalesce", ["get", "render_height"], 12], 1.4],
                                 "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
                                 "fill-extrusion-vertical-gradient": true,
@@ -374,7 +371,6 @@
 
             map3d.on("styledata", apply3DTheme);
             map3d.on("idle", apply3DTheme);
-
             async function fetchJsonTimeout(url, ms) {
                 const ctrl = new AbortController();
                 const timer = setTimeout(() => ctrl.abort(), ms);
@@ -383,10 +379,7 @@
                     clearTimeout(timer);
                     if (!r.ok) return null;
                     return await r.json();
-                } catch (_) {
-                    clearTimeout(timer);
-                    return null;
-                }
+                } catch (_) { clearTimeout(timer); return null; }
             }
 
             async function geocode(q) {
@@ -397,9 +390,7 @@
                     return { lat: parseFloat(c.at(1)), lon: parseFloat(c.at(0)) };
                 }
                 const res2 = await fetchJsonTimeout(S + "nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(q), 3000);
-                if (res2 && res2.length) {
-                    return { lat: parseFloat(res2.at(0).lat), lon: parseFloat(res2.at(0).lon) };
-                }
+                if (res2 && res2.length) return { lat: parseFloat(res2.at(0).lat), lon: parseFloat(res2.at(0).lon) };
                 return null;
             }
 
@@ -409,29 +400,22 @@
                 const initLat = driverLat || (myLoc && myLoc.lat) || null;
                 const initLon = driverLon || (myLoc && myLoc.lon) || null;
 
-                const [ptA, ptEx, ptB] = await Promise.all([
-                    geocode(pointA),
-                    geocode(extraStop),
-                    geocode(pointB)
-                ]);
+                const [ptA, ptEx, ptB] = await Promise.all([geocode(pointA), geocode(extraStop), geocode(pointB)]);
 
-                if (ptA) new maplibregl.Marker({ element: makeIconPin(PERSON_SVG, "#38BDF8", "#0B0F22") }).setLngLat([ptA.lon, ptA.lat]).addTo(map3d);
-                if (ptEx) new maplibregl.Marker({ element: makeBadge("ЗАЕЗД", "#F59E0B", "#ffffff") }).setLngLat([ptEx.lon, ptEx.lat]).addTo(map3d);
-                if (ptB) new maplibregl.Marker({ element: makeIconPin(HOUSE_SVG, "#D946EF", "#ffffff") }).setLngLat([ptB.lon, ptB.lat]).addTo(map3d);
+                if (ptA) new maplibregl.Marker({ element: makeIconPin(PERSON_SVG, "#FF5C77", "#17050A") }).setLngLat([ptA.lon, ptA.lat]).addTo(map3d);
+                if (ptEx) new maplibregl.Marker({ element: makeBadge("ЗАЕЗД", "#FF9E00", "#ffffff") }).setLngLat([ptEx.lon, ptEx.lat]).addTo(map3d);
+                if (ptB) new maplibregl.Marker({ element: makeIconPin(HOUSE_SVG, "#FF0A37", "#ffffff") }).setLngLat([ptB.lon, ptB.lat]).addTo(map3d);
 
                 const targetPt = (stage === 1) ? ptA : (stage === 2 ? ptEx : ptB);
                 const stageLabel = (stage === 1) ? "Этап 1 • К пассажиру" : (stage === 2 ? "Этап 2 • На заезд" : "Финал • В точку Б");
 
-                if (!targetPt) {
-                    infoEl.innerText = stageLabel + " • Откройте кнопку «Навигатор» ниже";
-                    return;
-                }
+                if (!targetPt) { infoEl.innerText = stageLabel + " • Откройте «Навигатор» ниже"; return; }
 
                 let carMarker = null, firstFit = true;
                 async function updateLeg(lat, lon) {
                     if (lat === null || lon === null || isNaN(lat) || isNaN(lon)) {
                         map3d.easeTo({ center: [targetPt.lon, targetPt.lat], zoom: 16.5, pitch: 60 });
-                        infoEl.innerHTML = stageLabel + ": <b style='color:#38BDF8'>точка отмечена на карте</b>";
+                        infoEl.innerHTML = stageLabel + ": <b style='color:#FF5C77'>точка отмечена на карте</b>";
                         return;
                     }
                     if (!carMarker) carMarker = new maplibregl.Marker({ element: makeIconPin(CAR_SVG, "#10B981", "#ffffff") }).setLngLat([lon, lat]).addTo(map3d);
@@ -444,7 +428,7 @@
                         if (map3d.getSource("leg")) map3d.getSource("leg").setData(data);
                         else if (map3d.isStyleLoaded()) {
                             map3d.addSource("leg", { type: "geojson", data: data });
-                            map3d.addLayer({ id: "leg-line", type: "line", source: "leg", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#38BDF8", "line-width": 6 } });
+                            map3d.addLayer({ id: "leg-line", type: "line", source: "leg", layout: { "line-join": "round", "line-cap": "round" }, paint: { "line-color": "#FF1E42", "line-width": 6 } });
                         }
                         if (r0.distance <= 350) { map3d.easeTo({ center: [targetPt.lon, targetPt.lat], zoom: 18, pitch: 62, duration: 900 }); firstFit = false; }
                         else if (firstFit && coords.length) {
@@ -452,10 +436,10 @@
                             map3d.fitBounds(b, { padding: 45, pitch: 55 }); firstFit = false;
                         }
                         const km = (r0.distance / 1000).toFixed(1), min = Math.max(1, Math.round(r0.duration / 60));
-                        infoEl.innerHTML = stageLabel + ": <b style='color:#38BDF8'>" + km + " км</b> • ~" + min + " мин";
+                        infoEl.innerHTML = stageLabel + ": <b style='color:#FF5C77'>" + km + " км</b> • ~" + min + " мин";
                     } else {
                         map3d.easeTo({ center: [targetPt.lon, targetPt.lat], zoom: 16.5, pitch: 60 });
-                        infoEl.innerHTML = stageLabel + ": <b style='color:#38BDF8'>маркеры на карте</b>";
+                        infoEl.innerHTML = stageLabel + ": <b style='color:#FF5C77'>маркеры на карте</b>";
                     }
                 }
 
@@ -472,7 +456,6 @@
             }
         }, 120);
     }
-
 
     document.getElementById("close-map-btn").addEventListener("click", () => {
         if (mapGeoWatchId !== null && navigator.geolocation) { navigator.geolocation.clearWatch(mapGeoWatchId); mapGeoWatchId = null; }
@@ -531,20 +514,19 @@
             if (left > 0) {
                 const mm = String(Math.floor(left / 60)).padStart(2, "0");
                 const ss = String(left % 60).padStart(2, "0");
-                el.style.color = "#38BDF8";
+                el.style.color = "#FF5C77";
                 el.innerText = "Бесплатное ожидание: " + mm + ":" + ss;
             } else {
                 const paid = elapsed - 180;
                 const mm = String(Math.floor(paid / 60)).padStart(2, "0");
                 const ss = String(paid % 60).padStart(2, "0");
-                el.style.color = "#D946EF";
+                el.style.color = "#FF0A37";
                 el.innerText = "Платное ожидание: +" + mm + ":" + ss;
             }
         };
         tick();
         waitTimer = setInterval(tick, 1000);
     }
-
     document.getElementById("no-extra-btn").addEventListener("click", () => {
         extraStopAddr = "";
         addMsg("Без заезда", true);
@@ -576,6 +558,7 @@
         addMsg("Привет! Это АвтоПульс. Откуда вас забрать?", false);
         updateControls();
     }
+
     async function handleSend() {
         const text = chatInput.value.trim();
         if (!text) return;
@@ -608,7 +591,6 @@
         }
         updateControls();
     }
-
     function openPassengerTripMap() {
         openInAppMap({
             title: "3D-Маршрут поездки",
@@ -630,7 +612,7 @@
             if (!currentOrderId || isDriver) return;
             if (step === 12) {
                 const ord = await fsGet("orders/" + currentOrderId);
-                if (!ord) {
+                if (!ord || ord.status === "completed") {
                     stopTimers();
                     addMsg("Поездка завершена. Пожалуйста, не забудьте свои вещи в салоне. Спасибо, что выбрали АвтоПульс!", false);
                     step = 13;
@@ -680,7 +662,7 @@
                 pending.forEach(o => {
                     const card = document.createElement("div");
                     card.className = "offer-card";
-                    card.innerHTML = '<div><div style="font-weight:800; font-size:19px; color:#38BDF8;">' + o.price + ' ₽</div><div style="font-size:12px; color:#ccc;">Водитель готов выехать</div></div><div style="display:flex; gap:6px;"><button type="button" class="btn btn-outline-purple" style="padding:8px 10px; font-size:13px;" onclick="declineOffer(\'' + o.id + '\', \'' + o.price + '\')">Отказать</button><button type="button" class="btn btn-blue" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer(\'' + o.id + '\', \'' + o.price + '\', \'' + o.driverPhone + '\')">Согласен</button></div>';
+                    card.innerHTML = '<div><div style="font-weight:800; font-size:19px; color:#FF5C77;">' + o.price + ' ₽</div><div style="font-size:12px; color:#ccc;">Водитель готов выехать</div></div><div style="display:flex; gap:6px;"><button type="button" class="btn btn-outline-red" style="padding:8px 10px; font-size:13px;" onclick="declineOffer(\'' + o.id + '\', \'' + o.price + '\')">Отказать</button><button type="button" class="btn btn-red-bright" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer(\'' + o.id + '\', \'' + o.price + '\', \'' + o.driverPhone + '\')">Согласен</button></div>';
                     list.appendChild(card);
                 });
                 document.getElementById("offers-container").classList.toggle("hidden", pending.length === 0);
@@ -772,6 +754,11 @@
             activeMineOrder = null;
 
             for (const o of allOrders) {
+                if (!o.from && !o.to && !o.phone) {
+                    fsDelete("orders/" + o.id);
+                    continue;
+                }
+                if (o.status === "completed") continue;
                 if (o.status === "searching" && (now - (o.createdAt || 0) > 15 * 60 * 1000)) {
                     fsDelete("orders/" + o.id);
                     continue;
@@ -787,20 +774,19 @@
                         openFullRoute(o.from || "", o.extraStop || "", o.to || "", o.status, o.driverLat || "", o.driverLon || "");
                     }
                 }
-
                 let badgeHtml = "";
                 let actionHtml = "";
                 if (isMine) {
                     if (o.status === "arrived") {
                         badgeHtml = '<span class="status-pill" style="background:rgba(16,185,129,0.2);color:#10B981;border:1px solid #10B981;">НА МЕСТЕ (А)</span>';
                     } else if (o.status === "to_extra") {
-                        badgeHtml = '<span class="status-pill" style="background:rgba(217,70,239,0.2);color:#D946EF;border:1px solid #D946EF;">НА ЗАЕЗД</span>';
+                        badgeHtml = '<span class="status-pill" style="background:rgba(255,10,55,0.25);color:#FF5C77;border:1px solid #FF5C77;">НА ЗАЕЗД</span>';
                     } else if (o.status === "arrived_extra") {
                         badgeHtml = '<span class="status-pill" style="background:rgba(16,185,129,0.2);color:#10B981;border:1px solid #10B981;">НА ЗАЕЗДЕ</span>';
                     } else if (o.status === "in_transit") {
-                        badgeHtml = '<span class="status-pill" style="background:rgba(217,70,239,0.2);color:#D946EF;border:1px solid #D946EF;">В ТОЧКУ Б</span>';
+                        badgeHtml = '<span class="status-pill" style="background:rgba(255,10,55,0.25);color:#FF5C77;border:1px solid #FF5C77;">В ТОЧКУ Б</span>';
                     } else {
-                        badgeHtml = '<span class="status-pill" style="background:rgba(56,189,248,0.2);color:#38BDF8;border:1px solid #38BDF8;">К ПАССАЖИРУ</span>';
+                        badgeHtml = '<span class="status-pill" style="background:rgba(255,92,119,0.22);color:#FF5C77;border:1px solid #FF5C77;">К ПАССАЖИРУ</span>';
                     }
 
                     const cleanClient = (o.phone || "").replace(/[^\d+]/g, "");
@@ -820,38 +806,38 @@
                     if (o.status === "accepted" || o.status === "arrived") {
                         const nextSt = hasEx ? "to_extra" : "in_transit";
                         const nextLbl = hasEx ? "Пассажир сел -> На заезд" : "Пассажир сел -> В точку Б";
-                        stageBtns += '<button type="button" class="btn btn-purple-bright" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'' + nextSt + '\', false, true, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">' + nextLbl + '</button>';
+                        stageBtns += '<button type="button" class="btn btn-red-bright" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'' + nextSt + '\', false, true, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">' + nextLbl + '</button>';
                     }
                     if (o.status === "to_extra") {
                         stageBtns += '<button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'arrived_extra\', true, false, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">На месте (Заезд • 3 мин)</button>';
                     }
                     if (o.status === "to_extra" || o.status === "arrived_extra") {
-                        stageBtns += '<button type="button" class="btn btn-purple-bright" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'in_transit\', false, true, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">Едем дальше -> В точку Б</button>';
+                        stageBtns += '<button type="button" class="btn btn-red-bright" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'in_transit\', false, true, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">Едем дальше -> В точку Б</button>';
                     }
 
                     actionHtml = '<p style="color:#10B981; font-weight:bold; margin-bottom:8px;">Заказ принят • Цена: ' + o.price + ' ₽</p>' +
                         comingHtml +
-                        '<button type="button" class="btn btn-blue" style="width:100%; margin-bottom:8px;" onclick="openFullRoute(\'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\', \'' + o.status + '\', \'' + (o.driverLat || "") + '\', \'' + (o.driverLon || "") + '\')">Открыть 3D-навигатор</button>' +
+                        '<button type="button" class="btn btn-coral" style="width:100%; margin-bottom:8px;" onclick="openFullRoute(\'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\', \'' + o.status + '\', \'' + (o.driverLat || "") + '\', \'' + (o.driverLon || "") + '\')">Открыть 3D-навигатор</button>' +
                         stageBtns +
-                        '<a href="tel:' + cleanClient + '" class="btn btn-outline-blue" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>' +
+                        '<a href="tel:' + cleanClient + '" class="btn btn-outline-coral" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>' +
                         '<button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder(\'' + o.id + '\')">Завершить поездку</button>';
                 } else {
                     const offers = await fsList("orders/" + o.id + "/offers");
                     const myOffer = offers.find(off => off.driverPhone === driverPhone);
                     if (myOffer) {
                         if (myOffer.status === "pending") {
-                            actionHtml = '<p style="color:#D946EF; font-size:14px;">Ваша цена ' + myOffer.price + ' ₽ отправлена. Ждем ответа...</p>';
+                            actionHtml = '<p style="color:#FF5C77; font-size:14px;">Ваша цена ' + myOffer.price + ' ₽ отправлена. Ждем ответа...</p>';
                         } else if (myOffer.status === "declined") {
-                            actionHtml = '<p style="color:#F43F5E; font-size:13px; margin-bottom:6px;">Пассажир отказался от ' + myOffer.price + ' ₽. Предложите другую:</p><div style="display:flex; gap:8px;"><input type="number" id="price-' + o.id + '" placeholder="Новая цена (₽)"><button type="button" class="btn" onclick="updateOffer(\'' + o.id + '\', \'' + myOffer.id + '\')">Предложить</button></div>';
+                            actionHtml = '<p style="color:#FF5C77; font-size:13px; margin-bottom:6px;">Пассажир отказался от ' + myOffer.price + ' ₽. Предложите другую:</p><div style="display:flex; gap:8px;"><input type="number" id="price-' + o.id + '" placeholder="Новая цена (₽)"><button type="button" class="btn" onclick="updateOffer(\'' + o.id + '\', \'' + myOffer.id + '\')">Предложить</button></div>';
                         }
                     } else {
                         actionHtml = '<div style="display:flex; gap:8px;"><input type="number" id="price-' + o.id + '" placeholder="Ваша цена (₽)"><button type="button" class="btn" onclick="createOffer(\'' + o.id + '\')">Предложить</button></div>';
                     }
                 }
-                const extraLineHtml = o.extraStop ? ('<strong style="color:#F59E0B;">Заезд: ' + o.extraStop + '</strong>') : "";
-                html += '<div class="card ' + (isMine ? 'accepted' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пассажир (А): ' + o.from + '</strong>' + badgeHtml + '</div>' + extraLineHtml + '<strong>Назначение (Б): ' + o.to + '</strong><span style="color:#38BDF8; font-weight:600;">Телефон: ' + o.phone + '</span><div style="margin-top:8px;">' + actionHtml + '</div></div>';
+                const extraLineHtml = o.extraStop ? ('<strong style="color:#FF9E00;">Заезд: ' + o.extraStop + '</strong>') : "";
+                html += '<div class="card ' + (isMine ? 'accepted' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пассажир (А): ' + o.from + '</strong>' + badgeHtml + '</div>' + extraLineHtml + '<strong>Назначение (Б): ' + o.to + '</strong><span style="color:#FF5C77; font-weight:600;">Телефон: ' + o.phone + '</span><div style="margin-top:8px;">' + actionHtml + '</div></div>';
             }
-            driverBox.innerHTML = count > 0 ? html : '<p style="text-align:center; color:#D946EF; margin-top:40px;">Активных заявок пока нет<br>(Водитель: ' + driverPhone + ')</p>';
+            driverBox.innerHTML = count > 0 ? html : '<p style="text-align:center; color:#FF5C77; margin-top:40px;">Активных заявок пока нет<br>(Водитель: ' + driverPhone + ')</p>';
         };
         refresh();
         pollTimer = setInterval(refresh, 3000);
@@ -872,8 +858,18 @@
         }
     }
 
-    async function completeOrder(id) {
+    async function cleanAndDeleteOrder(id) {
+        if (!id) return;
+        const offers = await fsList("orders/" + id + "/offers");
+        for (const off of offers) {
+            if (off.id) await fsDelete("orders/" + id + "/offers/" + off.id);
+        }
+        await fsPatch("orders/" + id, { status: "completed" });
         await fsDelete("orders/" + id);
+    }
+
+    async function completeOrder(id) {
+        await cleanAndDeleteOrder(id);
     }
 
     document.getElementById("send-btn").addEventListener("click", handleSend);
@@ -882,14 +878,13 @@
 
     document.getElementById("cancel-order-btn").addEventListener("click", async () => {
         stopTimers();
-        if (currentOrderId) await fsDelete("orders/" + currentOrderId);
+        if (currentOrderId) await cleanAndDeleteOrder(currentOrderId);
         document.getElementById("offers-container").classList.add("hidden");
         addMsg("Отменить заявку", true);
         addMsg("Заявка полностью отменена.", false);
         step = 13;
         updateControls();
     });
-
     const rulesModal = document.getElementById("rules-modal");
     if (!localStorage.getItem("autopulse_rules_v1")) rulesModal.classList.remove("hidden");
     document.getElementById("open-rules-btn").addEventListener("click", () => rulesModal.classList.remove("hidden"));
@@ -897,6 +892,7 @@
         localStorage.setItem("autopulse_rules_v1", "1");
         rulesModal.classList.add("hidden");
     });
+
     const pinModal = document.getElementById("pin-modal");
     const pinErr = document.getElementById("pin-error");
 
@@ -907,7 +903,7 @@
             const btn = document.createElement("button");
             btn.type = "button";
             const isSel = selectedPlan.days === p.days;
-            btn.className = "btn " + (isSel ? "btn-blue" : "btn-outline-purple");
+            btn.className = "btn " + (isSel ? "btn-coral" : "btn-outline-red");
             btn.style.padding = "10px 6px";
             btn.style.fontSize = "13px";
             btn.innerText = p.label + " • " + p.price + " ₽";
@@ -926,7 +922,6 @@
         document.getElementById("plans-wrap").classList.remove("hidden");
         renderPlans(phone);
     }
-
     function updatePinModalUI() {
         document.getElementById("login-fields-wrap").classList.remove("hidden");
         document.getElementById("plans-wrap").classList.add("hidden");
@@ -949,6 +944,7 @@
         isRegisterMode = false;
         updatePinModalUI();
     });
+
     document.getElementById("toggle-mode-btn").addEventListener("click", () => {
         if (isDriver) {
             isDriver = false;
@@ -968,7 +964,6 @@
     });
 
     document.getElementById("close-pin-btn").addEventListener("click", () => pinModal.classList.add("hidden"));
-
     document.getElementById("login-driver-btn").addEventListener("click", async () => {
         const phone = document.getElementById("driver-phone-input").value.trim();
         const pin = document.getElementById("pin-input").value.trim();
@@ -1035,4 +1030,3 @@
 </script>
 </body>
 </html>
-
