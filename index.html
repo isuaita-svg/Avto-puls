@@ -80,6 +80,8 @@
     <button type="button" class="btn btn-outline-coral" id="add-extra-btn" style="flex:1;">Добавить адрес</button>
 </div>
 
+<div id="address-suggestions" class="hidden" style="background:#17050A; border-top:1px solid rgba(255,30,66,0.45); padding:8px 12px; display:flex; flex-direction:column; gap:6px; max-height:32vh; overflow-y:auto;"></div>
+
 <div id="passenger-controls" class="bottom-bar">
     <input type="text" id="chat-input" placeholder="Откуда забрать (точка А)...">
     <button type="button" class="btn" id="send-btn">Отпр.</button>
@@ -276,6 +278,15 @@
         const m = calcDistanceMeters(lat1, lon1, lat2, lon2);
         if (m > 100000) return "В пути (Ухта)";
         return m < 1000 ? (m + " м от вас") : ((m / 1000).toFixed(1) + " км от вас");
+    }
+
+    function formatMapQuery(addr) {
+        const clean = (addr || "").trim();
+        if (!clean) return "";
+        const low = clean.toLowerCase();
+        const places = ["ухта", "водный", "ярега", "шудаяг", "седью", "боровой", "сосногорск", "нижний одес", "сыктывкар", "емва"];
+        if (places.some(p => low.includes(p)) || clean.includes(",")) return clean;
+        return "Ухта, " + clean;
     }
     let map3d = null;
     let mapGeoWatchId = null;
@@ -530,6 +541,95 @@
         tick();
         waitTimer = setInterval(tick, 1000);
     }
+    let suggestTimer = null;
+    const suggestBox = document.getElementById("address-suggestions");
+
+    const LOCAL_ADDRESSES = [
+        "г. Ухта, пр-т Ленина", "пгт. Водный, ул. Ленина", "пгт. Ярега, ул. Ленина", "г. Сосногорск, ул. Ленина",
+        "г. Ухта, ул. Мира", "пгт. Водный, ул. Мира", "пгт. Ярега, ул. Мира", "г. Сосногорск, ул. Мира",
+        "г. Ухта, ул. Октябрьская", "пгт. Водный, ул. Октябрьская", "пгт. Ярега, ул. Октябрьская",
+        "г. Ухта, ул. Советская", "пгт. Водный, ул. Советская", "пгт. Ярега, ул. Советская", "г. Сосногорск, ул. Советская",
+        "г. Ухта, ул. Первомайская", "пгт. Водный, ул. Первомайская", "пгт. Ярега, ул. Первомайская",
+        "г. Ухта, ул. Гагарина", "пгт. Водный, ул. Гагарина", "пгт. Ярега, ул. Гагарина", "г. Сосногорск, ул. Гагарина",
+        "г. Ухта, ул. Набережная Нефтяников", "г. Ухта, ул. Набережная Газовиков", "г. Ухта, ул. Оплеснина",
+        "г. Ухта, ул. Сенюкова", "г. Ухта, ул. Интернациональная", "г. Ухта, ул. Бушуева",
+        "г. Ухта, ул. Юбилейная", "г. Ухта, ул. Куратова", "г. Ухта, пр-т Космонавтов",
+        "г. Ухта, пр-т Зерюнова", "г. Ухта, ул. Дзержинского", "г. Ухта, ул. Чибьюская",
+        "пгт. Шудаяг, ул. Тиманская", "пгт. Шудаяг, ул. Шахтёрская", "пгт. Шудаяг, ул. Павлова",
+        "пгт. Водный, ул. Торопова", "пгт. Водный, ул. Лесная", "пгт. Водный, ул. Школьная",
+        "пгт. Ярега, ул. Лермонтова", "пгт. Ярега, ул. Строительная",
+        "г. Сосногорск, 6-й микрорайон", "г. Сосногорск, ул. Оплеснина",
+        "г. Ухта, Аэропорт", "г. Ухта, Ж/Д Вокзал", "г. Ухта, ТРЦ Ярмарка", "пгт. Седью", "пгт. Боровой"
+    ];
+
+    function hideSuggestions() {
+        suggestBox.innerHTML = "";
+        suggestBox.classList.add("hidden");
+    }
+
+    function renderSuggestionList(items) {
+        if (!items.length) { hideSuggestions(); return; }
+        suggestBox.innerHTML = '<span style="font-size:12px; color:#FF5C77; font-weight:700;">Уточните город или посёлок:</span>';
+        items.slice(0, 5).forEach(line => {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.style.cssText = "background:#220810; color:#fff; border:1px solid rgba(255,30,66,0.75); border-radius:12px; padding:9px 12px; text-align:left; font-size:14px; cursor:pointer;";
+            item.innerText = line;
+            item.onclick = () => {
+                chatInput.value = line;
+                hideSuggestions();
+                chatInput.focus();
+            };
+            suggestBox.appendChild(item);
+        });
+        suggestBox.classList.remove("hidden");
+    }
+
+    async function loadAddressSuggestions(query) {
+        const q = query.trim();
+        if (q.length < 2 || (step !== 0 && step !== 1 && step !== 3)) {
+            hideSuggestions();
+            return;
+        }
+        const tokens = q.toLowerCase().split(/[\s,]+/).filter(t => t.length >= 2);
+        const houseNum = q.toLowerCase().split(/[\s,]+/).find(t => /^\d/.test(t));
+        const seen = [];
+
+        LOCAL_ADDRESSES.forEach(item => {
+            const low = item.toLowerCase();
+            if (tokens.every(t => low.includes(t))) {
+                const formatted = (houseNum && !low.includes(houseNum)) ? (item + ", " + houseNum) : item;
+                if (!seen.includes(formatted)) seen.push(formatted);
+            }
+        });
+        renderSuggestionList(seen);
+
+        try {
+            const streetPart = q.split(",")[0].trim();
+            const r = await fetch(S + "photon.komoot.io/api/?q=" + encodeURIComponent(streetPart) + "&lat=63.567&lon=53.683&limit=6");
+            if (!r.ok) return;
+            const data = await r.json();
+            (data.features || []).forEach(f => {
+                const p = f.properties || {};
+                const place = p.city || p.town || p.village || p.hamlet || p.locality || p.state || "";
+                const street = p.street || p.name || "";
+                const house = p.housenumber || "";
+                const line = [place, street, house].filter(Boolean).join(", ");
+                if (line && !seen.includes(line)) seen.push(line);
+            });
+            renderSuggestionList(seen);
+        } catch (_) {}
+    }
+
+    chatInput.addEventListener("input", () => {
+        if (suggestTimer) clearTimeout(suggestTimer);
+        if (step === 0 || step === 1 || step === 3) {
+            suggestTimer = setTimeout(() => loadAddressSuggestions(chatInput.value), 150);
+        } else {
+            hideSuggestions();
+        }
+    });
+
     document.getElementById("no-extra-btn").addEventListener("click", () => {
         extraStopAddr = "";
         addMsg("Без заезда", true);
@@ -555,6 +655,7 @@
 
     function resetChat() {
         stopTimers();
+        hideSuggestions();
         chatBox.innerHTML = "";
         currentOrderId = null; selectedDriverPhone = ""; extraStopAddr = ""; lastDriverLat = null; lastDriverLon = null;
         orderStatus = "searching"; arrivedAt = 0; clientComing = ""; arrivedNotified = false; inTransitNotified = false; step = 0;
@@ -565,6 +666,7 @@
     async function handleSend() {
         const text = chatInput.value.trim();
         if (!text) return;
+        hideSuggestions();
         addMsg(text, true);
         chatInput.value = "";
 
@@ -597,9 +699,9 @@
     function openPassengerTripMap() {
         openInAppMap({
             title: "3D-Маршрут поездки",
-            pointA: "Ухта " + fromAddr,
-            extraStop: extraStopAddr ? ("Ухта " + extraStopAddr) : "",
-            pointB: "Ухта " + toAddr,
+            pointA: formatMapQuery(fromAddr),
+            extraStop: formatMapQuery(extraStopAddr),
+            pointB: formatMapQuery(toAddr),
             orderStatus: orderStatus,
             driverLat: lastDriverLat,
             driverLon: lastDriverLon
@@ -706,9 +808,9 @@
         else if (statusStr === "in_transit") navTitle = "Финал • В точку Б";
         openInAppMap({
             title: navTitle,
-            pointA: "Ухта " + fromAddrStr,
-            extraStop: extraStr ? ("Ухта " + extraStr) : "",
-            pointB: "Ухта " + toAddrStr,
+            pointA: formatMapQuery(fromAddrStr),
+            extraStop: formatMapQuery(extraStr),
+            pointB: formatMapQuery(toAddrStr),
             orderStatus: statusStr || "accepted",
             driverLat: dLatStr ? parseFloat(dLatStr) : null,
             driverLon: dLonStr ? parseFloat(dLonStr) : null
@@ -752,8 +854,8 @@
             if (document.activeElement && document.activeElement.tagName === "INPUT") return;
             const allOrders = await fsList("orders");
             const now = Date.now();
-            let html = "";
-            let count = 0;
+            const myLoc = await getBrowserLocation();
+            const visibleOrders = [];
             activeMineOrder = null;
 
             for (const o of allOrders) {
@@ -769,6 +871,30 @@
                 const mineStatuses = ["accepted", "arrived", "to_extra", "arrived_extra", "in_transit"];
                 const isMine = mineStatuses.includes(o.status) && o.driverPhone === driverPhone;
                 if (o.status !== "searching" && !isMine) continue;
+
+                const cLat = parseFloat(o.clientLat);
+                const cLon = parseFloat(o.clientLon);
+                const distM = (myLoc && !isNaN(cLat) && !isNaN(cLon))
+                    ? calcDistanceMeters(myLoc.lat, myLoc.lon, cLat, cLon)
+                    : 999999;
+
+                if (o.status === "searching" && o.createdAt && distM < 999999) {
+                    const ageSec = (now - o.createdAt) / 1000;
+                    if (ageSec < 15 && distM > 1500) continue;
+                    if (ageSec < 30 && distM > 4000) continue;
+                }
+
+                visibleOrders.push({ order: o, isMine: isMine, distM: isMine ? -1 : distM, rawDist: distM });
+            }
+
+            visibleOrders.sort((a, b) => (a.distM - b.distM) || ((b.order.createdAt || 0) - (a.order.createdAt || 0)));
+
+            let html = "";
+            let count = 0;
+
+            for (const item of visibleOrders) {
+                const o = item.order;
+                const isMine = item.isMine;
                 count++;
                 if (isMine) {
                     activeMineOrder = o;
@@ -825,6 +951,10 @@
                         '<a href="tel:' + cleanClient + '" class="btn btn-outline-coral" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>' +
                         '<button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder(\'' + o.id + '\')">Завершить поездку</button>';
                 } else {
+                    if (item.rawDist < 100000) {
+                        const dText = item.rawDist < 1000 ? (item.rawDist + " м от вас") : ((item.rawDist / 1000).toFixed(1) + " км от вас");
+                        badgeHtml = '<span class="status-pill" style="background:rgba(16,185,129,0.18);color:#10B981;border:1px solid #10B981;">' + dText + '</span>';
+                    }
                     const offers = await fsList("orders/" + o.id + "/offers");
                     const myOffer = offers.find(off => off.driverPhone === driverPhone);
                     if (myOffer) {
@@ -1031,7 +1161,9 @@
             if (driverModalMode === "trial") {
                 if (localStorage.getItem("autopulse_trial_used_v1") === "1" || existing) {
                     localStorage.setItem("autopulse_trial_used_v1", "1");
-                    pinErr.innerText = "Бесплатный период на 90 дней выдаётся единоразово. Выберите платный тариф.";
+                    selectedPlan = DRIVER_PLANS.at(0);
+                    driverModalMode = "paid";
+                    pinErr.innerText = "Бесплатный период на 90 дней выдаётся единоразово. Выберите платный тариф:";
                     pinErr.classList.remove("hidden");
                     renderDriverTariffs();
                 } else {
@@ -1045,9 +1177,10 @@
                     pinErr.innerText = "Неверный номер телефона или PIN-код";
                     pinErr.classList.remove("hidden");
                 } else if (existing.expiresAt && Date.now() > Number(existing.expiresAt)) {
+                    localStorage.setItem("autopulse_trial_used_v1", "1");
                     selectedPlan = DRIVER_PLANS.at(0);
                     driverModalMode = "paid";
-                    pinErr.innerText = "Срок действия истёк. Выберите тариф для продления:";
+                    pinErr.innerText = "Пробный период или подписка истекли. Выберите платный тариф для продления:";
                     pinErr.classList.remove("hidden");
                     renderDriverTariffs();
                 } else {
@@ -1072,6 +1205,7 @@
         document.getElementById("driver-badge").classList.remove("hidden");
         document.getElementById("toggle-mode-btn").innerText = "Пассажир";
         chatBox.classList.add("hidden");
+        hideSuggestions();
         document.getElementById("offers-container").classList.add("hidden");
         ["extra-stop-choice", "passenger-controls", "active-controls", "new-order-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
         document.getElementById("driver-box").classList.remove("hidden");
