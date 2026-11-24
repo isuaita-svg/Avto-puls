@@ -28,6 +28,7 @@
         input { flex: 1; background-color: #220810; border: 1.2px solid rgba(255,30,66,0.55); border-radius: 14px; padding: 12px; color: #fff; font-size: 15px; outline: none; }
         input:focus { border-color: #FF5C77; box-shadow: 0 0 10px rgba(255,92,119,0.45); }
         .btn { background-color: #FF1E42; color: #fff; border: 1.5px solid #FF1E42; border-radius: 14px; padding: 10px 15px; font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; display: inline-block; box-shadow: 0 0 14px rgba(255,30,66,0.45); }
+        .btn:disabled { background-color: #241016; border-color: #444; color: #777; box-shadow: none; cursor: not-allowed; }
         .btn-coral { background-color: #FF5C77; color: #fff; border-color: #FF5C77; box-shadow: 0 0 14px rgba(255,92,119,0.45); }
         .btn-green { background-color: #10B981; color: #000; border-color: #10B981; box-shadow: 0 0 12px rgba(16,185,129,0.35); }
         .btn-red-bright { background-color: #FF0A37; color: #fff; border-color: #FF0A37; box-shadow: 0 0 16px rgba(255,10,55,0.55); }
@@ -39,7 +40,7 @@
         .hidden { display: none !important; }
         .modal { position: fixed; inset: 0; background: rgba(12,3,6,0.92); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
         .modal-content { background: #17050A; border: 1.5px solid #FF1E42; box-shadow: 0 0 28px rgba(255,30,66,0.45); padding: 18px; border-radius: 20px; width: 100%; max-width: 390px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0; }
+        .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         #inapp-map { width: 100%; height: 340px; border-radius: 14px; border: 1.2px solid #FF1E42; background: #0C0306; overflow: hidden; }
     </style>
 </head>
@@ -131,7 +132,7 @@
         <p style="font-size:13px; color:#FF1E42; font-weight:700;">2. Ограничение ответственности</p>
         <p style="font-size:13px; color:#ccc; line-height:1.4;">Все договоренности о цене, маршруте и условиях поездки заключаются напрямую между пассажиром и водителем. Разработчик не несет ответственности за действия сторон, безопасность поездки, а также за забытые или оставленные в автомобиле личные вещи, деньги и документы.</p>
         <p style="font-size:13px; color:#FF1E42; font-weight:700;">3. Условия доступа и реквизиты</p>
-        <p style="font-size:12px; color:#bbb; line-height:1.4;">Для водителей первые 6 месяцев предоставляются бесплатно. Далее доступ продлевается по выбору: 1 день (100 ₽), 3 дня (250 ₽), 7 дней (450 ₽) или 30 дней (1200 ₽). Доступ активируется мгновенно после оплаты.<br>Исполнитель: самозанятый Плюснин Владимир Александрович • E-mail: aitaissu09@yandex.ru • г. Ухта.</p>
+        <p style="font-size:12px; color:#bbb; line-height:1.4;">Для водителей первые 90 дней предоставляются бесплатно (единоразово). Далее доступ продлевается по выбору: 1 день (300 ₽), 3 дня (800 ₽), 7 дней (1700 ₽) или 30 дней (2700 ₽). Доступ активируется мгновенно после оплаты.<br>Исполнитель: самозанятый Плюснин Владимир Александрович • E-mail: aitaissu09@yandex.ru • г. Ухта.</p>
         <button type="button" class="btn" id="accept-rules-btn" style="width:100%; margin-top:4px;">Принимаю условия</button>
     </div>
 </div>
@@ -139,24 +140,26 @@
 <div id="pin-modal" class="modal hidden">
     <div class="modal-content">
         <h3 id="pin-modal-title" style="color:#FF5C77; font-size:18px;">ВХОД ДЛЯ ВОДИТЕЛЯ</h3>
-        <p id="pin-modal-desc" style="font-size:13px; color:#ccc; line-height:1.35;">Введите ваш номер телефона и личный 4-значный PIN-код:</p>
+        <p id="pin-modal-desc" style="font-size:13px; color:#ccc; line-height:1.35;">Войдите по PIN или выберите тариф ниже:</p>
 
-        <div id="login-fields-wrap" style="display:flex; flex-direction:column; gap:10px;">
-            <input type="tel" id="driver-phone-input" placeholder="Номер телефона">
-            <input type="password" id="pin-input" maxlength="4" placeholder="Личный PIN-код (4 цифры)" inputmode="numeric">
-            <p id="pin-error" style="color:#FF5C77; font-size:13px;" class="hidden"></p>
-            <button type="button" class="link-btn" id="switch-register-btn" style="text-align:left; padding:2px 0;">Нет PIN-кода? Получить на 6 мес. бесплатно</button>
-            <div style="display: flex; gap: 8px; margin-top:4px;">
-                <button type="button" class="btn" id="login-driver-btn" style="flex: 1;">Войти</button>
-                <button type="button" class="btn btn-outline-red" id="close-pin-btn" style="flex: 1;">Отмена</button>
-            </div>
+        <button type="button" class="btn btn-outline-red" id="select-trial-btn" style="width:100%;">Получить PIN бесплатно на 90 дней</button>
+        <div class="plans-grid" id="plans-grid"></div>
+
+        <input type="tel" id="driver-phone-input" placeholder="Номер телефона">
+        <input type="password" id="pin-input" maxlength="4" placeholder="Личный PIN-код (4 цифры)" inputmode="numeric">
+        <p id="pin-error" style="color:#FF5C77; font-size:13px;" class="hidden"></p>
+
+        <div id="login-actions-row" style="display:flex; gap:8px; margin-top:2px;">
+            <button type="button" class="btn" id="login-driver-btn" style="flex:1;">Войти</button>
+            <button type="button" class="btn btn-outline-red" id="close-pin-btn" style="flex:1;">Отмена</button>
         </div>
 
-        <div id="plans-wrap" class="hidden" style="display:flex; flex-direction:column; gap:10px;">
-            <div class="plans-grid" id="plans-grid"></div>
-            <a id="robokassa-pay-btn" href="#" target="_blank" class="btn btn-green" style="width:100%;">Оплатить 100 ₽ (1 день)</a>
-            <button type="button" class="link-btn" id="back-to-login-btn" style="text-align:center;">Уже оплатили? Вернуться ко входу</button>
+        <div id="pay-actions-row" class="hidden" style="display:flex; flex-direction:column; gap:8px; margin-top:2px;">
+            <a id="robokassa-pay-btn" href="#" target="_blank" class="btn btn-green" style="width:100%;">Оплатить 300 ₽</a>
+            <button type="button" class="btn btn-outline-red" id="close-pay-btn" style="width:100%;">Отмена</button>
         </div>
+
+        <button type="button" class="link-btn hidden" id="back-to-login-btn" style="text-align:center;">Уже есть действующий PIN? Вернуться ко входу</button>
     </div>
 </div>
 <script>
@@ -165,10 +168,10 @@
     const PAY_WORKER_URL = S + "avtoplus-robokassa.workers.dev/pay";
 
     const DRIVER_PLANS = [
-        { days: 1, label: "1 день", price: 100 },
-        { days: 3, label: "3 дня", price: 250 },
-        { days: 7, label: "7 дней", price: 450 },
-        { days: 30, label: "30 дней", price: 1200 }
+        { days: 1, label: "1 день", price: 300 },
+        { days: 3, label: "3 дня", price: 800 },
+        { days: 7, label: "7 дней", price: 1700 },
+        { days: 30, label: "30 дней", price: 2700 }
     ];
     let selectedPlan = DRIVER_PLANS.at(0);
 
@@ -462,7 +465,7 @@
         document.getElementById("map-modal").classList.add("hidden");
     });
     let step = 0, fromAddr = "", toAddr = "", extraStopAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null;
-    let isDriver = false, isRegisterMode = false, pollTimer = null, gpsTimer = null, waitTimer = null;
+    let isDriver = false, pollTimer = null, gpsTimer = null, waitTimer = null;
     let lastDriverLat = null, lastDriverLon = null, orderStatus = "searching", arrivedAt = 0, clientComing = "", arrivedNotified = false, inTransitNotified = false;
 
     const chatBox = document.getElementById("chat-box");
@@ -895,54 +898,94 @@
 
     const pinModal = document.getElementById("pin-modal");
     const pinErr = document.getElementById("pin-error");
+    let driverModalMode = "login";
 
-    function renderPlans(phone) {
+    function renderDriverTariffs() {
+        const trialUsed = localStorage.getItem("autopulse_trial_used_v1") === "1";
+        const trialBtn = document.getElementById("select-trial-btn");
+        trialBtn.disabled = trialUsed;
+        trialBtn.innerText = trialUsed ? "90 дней бесплатно • Использовано" : "Получить PIN бесплатно на 90 дней";
+        trialBtn.className = "btn " + (driverModalMode === "trial" ? "btn-coral" : "btn-outline-red");
+
         const grid = document.getElementById("plans-grid");
         grid.innerHTML = "";
         DRIVER_PLANS.forEach(p => {
             const btn = document.createElement("button");
             btn.type = "button";
-            const isSel = selectedPlan.days === p.days;
-            btn.className = "btn " + (isSel ? "btn-coral" : "btn-outline-red");
-            btn.style.padding = "10px 6px";
-            btn.style.fontSize = "13px";
+            const isSel = (driverModalMode === "paid" && selectedPlan.days === p.days);
+            btn.className = "btn " + (isSel ? "btn-green" : "btn-outline-red");
+            btn.style.padding = "9px 6px";
+            btn.style.fontSize = "12px";
             btn.innerText = p.label + " • " + p.price + " ₽";
-            btn.onclick = () => { selectedPlan = p; renderPlans(phone); };
+            btn.onclick = () => {
+                selectedPlan = p;
+                driverModalMode = "paid";
+                pinErr.classList.add("hidden");
+                renderDriverTariffs();
+            };
             grid.appendChild(btn);
         });
-        const payBtn = document.getElementById("robokassa-pay-btn");
-        payBtn.innerText = "Оплатить " + selectedPlan.price + " ₽ (" + selectedPlan.label + ")";
-        payBtn.href = PAY_WORKER_URL + "?phone=" + encodeURIComponent(phone) + "&days=" + selectedPlan.days + "&sum=" + selectedPlan.price;
-    }
 
-    function showPlansStep(phone) {
-        document.getElementById("pin-modal-title").innerText = "ПРОДЛЕНИЕ ПОДПИСКИ";
-        document.getElementById("pin-modal-desc").innerText = "Ваш пробный период (6 мес.) завершился. Выберите срок продления доступа:";
-        document.getElementById("login-fields-wrap").classList.add("hidden");
-        document.getElementById("plans-wrap").classList.remove("hidden");
-        renderPlans(phone);
+        const phone = document.getElementById("driver-phone-input").value.trim();
+        const pinInp = document.getElementById("pin-input");
+        const loginRow = document.getElementById("login-actions-row");
+        const payRow = document.getElementById("pay-actions-row");
+        const backBtn = document.getElementById("back-to-login-btn");
+
+        if (driverModalMode === "trial") {
+            document.getElementById("pin-modal-title").innerText = "БЕСПЛАТНО НА 90 ДНЕЙ";
+            document.getElementById("pin-modal-desc").innerText = "Выдаётся единоразово. Укажите телефон и придумайте 4-значный PIN:";
+            pinInp.classList.remove("hidden");
+            pinInp.placeholder = "Придумайте PIN (4 цифры)";
+            document.getElementById("login-driver-btn").innerText = "Активировать 90 дней";
+            loginRow.classList.remove("hidden");
+            payRow.classList.add("hidden");
+            backBtn.classList.remove("hidden");
+        } else if (driverModalMode === "paid") {
+            document.getElementById("pin-modal-title").innerText = "ПОКУПКА ТАРИФА";
+            document.getElementById("pin-modal-desc").innerText = "Укажите номер телефона для активации тарифа «" + selectedPlan.label + "»:";
+            pinInp.classList.add("hidden");
+            loginRow.classList.add("hidden");
+            payRow.classList.remove("hidden");
+            backBtn.classList.remove("hidden");
+            const payBtn = document.getElementById("robokassa-pay-btn");
+            payBtn.innerText = "Оплатить " + selectedPlan.price + " ₽ (" + selectedPlan.label + ")";
+            payBtn.href = PAY_WORKER_URL + "?phone=" + encodeURIComponent(phone) + "&days=" + selectedPlan.days + "&sum=" + selectedPlan.price;
+        } else {
+            document.getElementById("pin-modal-title").innerText = "ВХОД ДЛЯ ВОДИТЕЛЯ";
+            document.getElementById("pin-modal-desc").innerText = "Войдите по PIN или выберите тариф ниже:";
+            pinInp.classList.remove("hidden");
+            pinInp.placeholder = "Личный PIN-код (4 цифры)";
+            document.getElementById("login-driver-btn").innerText = "Войти";
+            loginRow.classList.remove("hidden");
+            payRow.classList.add("hidden");
+            backBtn.classList.add("hidden");
+        }
     }
-    function updatePinModalUI() {
-        document.getElementById("login-fields-wrap").classList.remove("hidden");
-        document.getElementById("plans-wrap").classList.add("hidden");
-        document.getElementById("pin-modal-title").innerText = isRegisterMode ? "ПРОБНЫЙ ПЕРИОД 6 МЕС." : "ВХОД ДЛЯ ВОДИТЕЛЯ";
-        document.getElementById("pin-modal-desc").innerText = isRegisterMode
-            ? "Укажите телефон и придумайте личный 4-значный PIN. Первые 6 месяцев бесплатно, далее подписка (1, 3, 7 или 30 дней)."
-            : "Введите ваш номер телефона и личный 4-значный PIN-код:";
-        document.getElementById("pin-input").placeholder = isRegisterMode ? "Придумайте PIN (4 цифры)" : "Личный PIN-код (4 цифры)";
-        document.getElementById("login-driver-btn").innerText = isRegisterMode ? "Получить PIN" : "Войти";
-        document.getElementById("switch-register-btn").innerText = isRegisterMode ? "Уже есть PIN-код? Войти" : "Нет PIN-кода? Получить на 6 мес. бесплатно";
+    document.getElementById("select-trial-btn").addEventListener("click", () => {
+        if (localStorage.getItem("autopulse_trial_used_v1") === "1") return;
+        driverModalMode = "trial";
         pinErr.classList.add("hidden");
-    }
-
-    document.getElementById("switch-register-btn").addEventListener("click", () => {
-        isRegisterMode = !isRegisterMode;
-        updatePinModalUI();
+        renderDriverTariffs();
     });
 
     document.getElementById("back-to-login-btn").addEventListener("click", () => {
-        isRegisterMode = false;
-        updatePinModalUI();
+        driverModalMode = "login";
+        pinErr.classList.add("hidden");
+        renderDriverTariffs();
+    });
+
+    document.getElementById("driver-phone-input").addEventListener("input", () => {
+        if (driverModalMode === "paid") renderDriverTariffs();
+    });
+
+    document.getElementById("robokassa-pay-btn").addEventListener("click", (e) => {
+        const phone = document.getElementById("driver-phone-input").value.trim();
+        if (phone.length < 6) {
+            e.preventDefault();
+            pinErr.innerText = "Сначала введите корректный номер телефона";
+            pinErr.classList.remove("hidden");
+        }
     });
 
     document.getElementById("toggle-mode-btn").addEventListener("click", () => {
@@ -956,14 +999,16 @@
             if (currentOrderId && (step === 10 || step === 12)) startPassengerPolling();
             updateControls();
         } else {
-            isRegisterMode = false;
-            updatePinModalUI();
+            driverModalMode = "login";
+            pinErr.classList.add("hidden");
             document.getElementById("driver-phone-input").value = localStorage.getItem("driver_phone") || "";
+            renderDriverTariffs();
             pinModal.classList.remove("hidden");
         }
     });
 
     document.getElementById("close-pin-btn").addEventListener("click", () => pinModal.classList.add("hidden"));
+    document.getElementById("close-pay-btn").addEventListener("click", () => pinModal.classList.add("hidden"));
     document.getElementById("login-driver-btn").addEventListener("click", async () => {
         const phone = document.getElementById("driver-phone-input").value.trim();
         const pin = document.getElementById("pin-input").value.trim();
@@ -983,13 +1028,16 @@
             const allDrivers = await fsList("drivers");
             const existing = allDrivers.find(d => (d.phone || "").trim() === phone);
 
-            if (isRegisterMode) {
-                if (existing) {
-                    pinErr.innerText = "Этот номер уже зарегистрирован. Нажмите «Войти».";
+            if (driverModalMode === "trial") {
+                if (localStorage.getItem("autopulse_trial_used_v1") === "1" || existing) {
+                    localStorage.setItem("autopulse_trial_used_v1", "1");
+                    pinErr.innerText = "Бесплатный период на 90 дней выдаётся единоразово. Выберите платный тариф.";
                     pinErr.classList.remove("hidden");
+                    renderDriverTariffs();
                 } else {
-                    const expiresAt = Date.now() + 180 * 24 * 60 * 60 * 1000;
-                    await fsAdd("drivers", { phone: phone, pin: pin, expiresAt: expiresAt });
+                    const expiresAt = Date.now() + 90 * 24 * 60 * 60 * 1000;
+                    await fsAdd("drivers", { phone: phone, pin: pin, trialUsed: "yes", expiresAt: expiresAt });
+                    localStorage.setItem("autopulse_trial_used_v1", "1");
                     enterDriverMode(phone);
                 }
             } else {
@@ -997,7 +1045,11 @@
                     pinErr.innerText = "Неверный номер телефона или PIN-код";
                     pinErr.classList.remove("hidden");
                 } else if (existing.expiresAt && Date.now() > Number(existing.expiresAt)) {
-                    showPlansStep(phone);
+                    selectedPlan = DRIVER_PLANS.at(0);
+                    driverModalMode = "paid";
+                    pinErr.innerText = "Срок действия истёк. Выберите тариф для продления:";
+                    pinErr.classList.remove("hidden");
+                    renderDriverTariffs();
                 } else {
                     enterDriverMode(phone);
                 }
@@ -1007,7 +1059,7 @@
             pinErr.classList.remove("hidden");
         } finally {
             loginBtn.disabled = false;
-            loginBtn.innerText = isRegisterMode ? "Получить PIN" : "Войти";
+            loginBtn.innerText = driverModalMode === "trial" ? "Активировать 90 дней" : "Войти";
         }
     });
 
