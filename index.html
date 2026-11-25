@@ -80,10 +80,34 @@
 </div>
 
 <div id="trip-options-choice" class="bottom-bar hidden" style="flex-direction:column; gap:8px;">
-    <div style="display:flex; gap:6px; width:100%;">
-        <button type="button" class="btn btn-outline-red" id="opt-seat-btn" style="flex:1; padding:10px 4px; font-size:13px;">👶 Кресло</button>
-        <button type="button" class="btn btn-outline-red" id="opt-bag-btn" style="flex:1; padding:10px 4px; font-size:13px;">🧳 Багаж</button>
-        <button type="button" class="btn btn-outline-red" id="opt-pet-btn" style="flex:1; padding:10px 4px; font-size:13px;">🐾 Животные</button>
+    <div style="display:flex; gap:8px; width:100%;">
+        <button type="button" class="btn btn-outline-red" id="opt-seat-btn" style="flex:1; padding:10px 6px; display:flex; flex-direction:column; align-items:center; gap:5px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 4l2 12h9l1.5 4"/>
+                <circle cx="12.5" cy="7" r="2.2"/>
+                <path d="M11.5 11l4 2.5"/>
+            </svg>
+            <span id="opt-seat-lbl" style="font-size:12px;">Кресло</span>
+        </button>
+        <button type="button" class="btn btn-outline-red" id="opt-bag-btn" style="flex:1; padding:10px 6px; display:flex; flex-direction:column; align-items:center; gap:5px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="7" width="16" height="13" rx="2"/>
+                <path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>
+                <line x1="9" y1="7" x2="9" y2="20"/>
+                <line x1="15" y1="7" x2="15" y2="20"/>
+            </svg>
+            <span id="opt-bag-lbl" style="font-size:12px;">Багаж</span>
+        </button>
+        <button type="button" class="btn btn-outline-red" id="opt-pet-btn" style="flex:1; padding:10px 6px; display:flex; flex-direction:column; align-items:center; gap:5px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="16" r="3.5"/>
+                <circle cx="6.5" cy="11" r="1.5"/>
+                <circle cx="9.8" cy="7.2" r="1.5"/>
+                <circle cx="14.2" cy="7.2" r="1.5"/>
+                <circle cx="17.5" cy="11" r="1.5"/>
+            </svg>
+            <span id="opt-pet-lbl" style="font-size:12px;">Животные</span>
+        </button>
     </div>
     <button type="button" class="btn btn-green" id="confirm-options-btn" style="width:100%;">Без доп. опций -> Телефон</button>
 </div>
@@ -652,18 +676,18 @@
     }
 
     function refreshOptionButtons() {
-        const sBtn = document.getElementById("opt-seat-btn");
-        const bBtn = document.getElementById("opt-bag-btn");
-        const pBtn = document.getElementById("opt-pet-btn");
-        sBtn.innerText = optSeat ? "✓ 👶 Кресло" : "👶 Кресло";
-        bBtn.innerText = optBag ? "✓ 🧳 Багаж" : "🧳 Багаж";
-        pBtn.innerText = optPet ? "✓ 🐾 Животные" : "🐾 Животные";
-        sBtn.style.borderColor = optSeat ? "#FF9E00" : "#FF1E42";
-        bBtn.style.borderColor = optBag ? "#FF9E00" : "#FF1E42";
-        pBtn.style.borderColor = optPet ? "#FF9E00" : "#FF1E42";
-        sBtn.style.color = optSeat ? "#FF9E00" : "#fff";
-        bBtn.style.color = optBag ? "#FF9E00" : "#fff";
-        pBtn.style.color = optPet ? "#FF9E00" : "#fff";
+        const items = [
+            { btn: document.getElementById("opt-seat-btn"), lbl: document.getElementById("opt-seat-lbl"), active: optSeat, name: "Кресло" },
+            { btn: document.getElementById("opt-bag-btn"), lbl: document.getElementById("opt-bag-lbl"), active: optBag, name: "Багаж" },
+            { btn: document.getElementById("opt-pet-btn"), lbl: document.getElementById("opt-pet-lbl"), active: optPet, name: "Животные" }
+        ];
+        items.forEach(it => {
+            it.lbl.innerText = it.active ? ("✓ " + it.name) : it.name;
+            it.btn.style.borderColor = it.active ? "#FF9E00" : "#FF1E42";
+            it.btn.style.color = it.active ? "#FF9E00" : "#ffffff";
+            it.btn.style.background = it.active ? "rgba(255,158,0,0.16)" : "#220810";
+            it.btn.style.boxShadow = it.active ? "0 0 14px rgba(255,158,0,0.45)" : "0 0 10px rgba(255,30,66,0.3)";
+        });
         const chosen = getSelectedOptionsText();
         document.getElementById("confirm-options-btn").innerText = chosen ? "Далее -> Телефон" : "Без доп. опций -> Телефон";
     }
@@ -714,6 +738,7 @@
     function resetChat() {
         stopTimers();
         hideSuggestions();
+        localStorage.removeItem("autopulse_active_order_id");
         chatBox.innerHTML = "";
         currentOrderId = null; selectedDriverPhone = ""; extraStopAddr = ""; optSeat = false; optBag = false; optPet = false;
         lastDriverLat = null; lastDriverLon = null;
@@ -747,6 +772,7 @@
                     clientLon: loc ? String(loc.lon) : ""
                 });
                 currentOrderId = created.id;
+                localStorage.setItem("autopulse_active_order_id", created.id);
                 addMsg("Заявка отправлена! Ожидаем предложения от водителей...", false);
                 startPassengerPolling();
             } catch (err) {
@@ -779,6 +805,8 @@
                 const ord = await fsGet("orders/" + currentOrderId);
                 if (!ord || ord.status === "completed") {
                     stopTimers();
+                    localStorage.removeItem("autopulse_active_order_id");
+                    currentOrderId = null;
                     addMsg("Поездка завершена. Пожалуйста, не забудьте свои вещи в салоне. Спасибо, что выбрали АвтоПульс!", false);
                     step = 13;
                     updateControls();
@@ -820,6 +848,17 @@
                     updateControls();
                 }
             } else if (step === 10) {
+                const ordCheck = await fsGet("orders/" + currentOrderId);
+                if (!ordCheck || ordCheck.status === "completed") {
+                    stopTimers();
+                    localStorage.removeItem("autopulse_active_order_id");
+                    currentOrderId = null;
+                    document.getElementById("offers-container").classList.add("hidden");
+                    addMsg("Заявка завершена.", false);
+                    step = 13;
+                    updateControls();
+                    return;
+                }
                 const allOffers = await fsList("orders/" + currentOrderId + "/offers");
                 const pending = allOffers.filter(o => o.status === "pending");
                 const list = document.getElementById("offers-list");
@@ -849,6 +888,7 @@
         if (loc) { upd.clientLat = String(loc.lat); upd.clientLon = String(loc.lon); }
         await fsPatch("orders/" + currentOrderId, upd);
         await fsPatch("orders/" + currentOrderId + "/offers/" + offerId, { status: "accepted" });
+        localStorage.setItem("autopulse_active_order_id", currentOrderId);
         selectedDriverPhone = dPhone;
         orderStatus = "accepted";
         document.getElementById("offers-container").classList.add("hidden");
@@ -1072,7 +1112,10 @@
 
     document.getElementById("cancel-order-btn").addEventListener("click", async () => {
         stopTimers();
-        if (currentOrderId) await cleanAndDeleteOrder(currentOrderId);
+        const ordId = currentOrderId;
+        localStorage.removeItem("autopulse_active_order_id");
+        currentOrderId = null;
+        if (ordId) await cleanAndDeleteOrder(ordId);
         document.getElementById("offers-container").classList.add("hidden");
         addMsg("Отменить заявку", true);
         addMsg("Заявка полностью отменена.", false);
@@ -1269,7 +1312,47 @@
         startDriverPolling();
     }
 
-    resetChat();
+    async function restorePassengerSession() {
+        const savedId = localStorage.getItem("autopulse_active_order_id");
+        if (!savedId) { resetChat(); return; }
+        try {
+            const ord = await fsGet("orders/" + savedId);
+            if (!ord || ord.status === "completed") {
+                localStorage.removeItem("autopulse_active_order_id");
+                resetChat();
+                return;
+            }
+            currentOrderId = savedId;
+            fromAddr = ord.from || "";
+            toAddr = ord.to || "";
+            extraStopAddr = ord.extraStop || "";
+            userPhone = ord.phone || "";
+            selectedDriverPhone = ord.driverPhone || "";
+            orderStatus = ord.status || "searching";
+            arrivedAt = Number(ord.arrivedAt || 0);
+            clientComing = ord.clientComing || "";
+            chatBox.innerHTML = "";
+            addMsg("Активный заказ восстановлен: " + fromAddr + " -> " + toAddr, false);
+            if (orderStatus === "searching") {
+                addMsg("Ожидаем предложения от водителей...", false);
+                step = 10;
+            } else {
+                if (ord.price) addMsg("Согласованная стоимость: " + ord.price + " ₽", false);
+                if (selectedDriverPhone) {
+                    document.getElementById("call-driver-btn").href = "tel:" + sanitizePhone(selectedDriverPhone);
+                }
+                if (orderStatus === "arrived" || orderStatus === "arrived_extra") arrivedNotified = true;
+                if (orderStatus === "in_transit" || orderStatus === "to_extra") inTransitNotified = true;
+                step = 12;
+            }
+            updateControls();
+            startPassengerPolling();
+        } catch (_) {
+            resetChat();
+        }
+    }
+
+    restorePassengerSession();
 </script>
 </body>
 </html>
