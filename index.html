@@ -23,7 +23,7 @@
         .msg.bot { background-color: #220810; color: #ffffff; align-self: flex-start; border: 1.2px solid rgba(255,92,119,0.65); box-shadow: 0 0 10px rgba(255,30,66,0.18); }
         .msg.user { background-color: rgba(255,30,66,0.25); color: #ffffff; align-self: flex-end; border: 1.2px solid #FF1E42; box-shadow: 0 0 12px rgba(255,30,66,0.35); }
         #offers-container { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-height: 44vh; overflow-y: auto; background: #17050A; border-top: 1px solid rgba(255,30,66,0.5); }
-        .offer-card { background: #220810; border: 1.5px solid #FF1E42; padding: 12px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; box-shadow: 0 0 14px rgba(255,30,66,0.3); }
+        .offer-card { background: #220810; border: 1.5px solid #FF1E42; padding: 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: stretch; gap: 10px; box-shadow: 0 0 14px rgba(255,30,66,0.3); }
         .bottom-bar { background-color: #17050A; padding: 10px 12px; border-top: 1px solid rgba(255,30,66,0.35); display: flex; gap: 8px; }
         input { flex: 1; background-color: #220810; border: 1.2px solid rgba(255,30,66,0.55); border-radius: 14px; padding: 12px; color: #fff; font-size: 15px; outline: none; }
         input:focus { border-color: #FF5C77; box-shadow: 0 0 10px rgba(255,92,119,0.45); }
@@ -74,6 +74,7 @@
     <span style="font-size: 14px; color: #FF5C77; font-weight: 700;">Предложения от водителей:</span>
     <div id="offers-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
 </div>
+
 <div id="extra-stop-choice" class="bottom-bar hidden">
     <button type="button" class="btn" id="no-extra-btn" style="flex:1;">Нет, сразу в точку Б</button>
     <button type="button" class="btn btn-outline-coral" id="add-extra-btn" style="flex:1;">Добавить адрес</button>
@@ -158,6 +159,7 @@
         <button type="button" class="btn" id="close-map-btn" style="width:100%;">Закрыть карту</button>
     </div>
 </div>
+
 <div id="rules-modal" class="modal hidden">
     <div class="modal-content">
         <h3 style="color:#FF5C77; font-size:17px;">ПРАВИЛА СЕРВИСА АВТОПУЛЬС</h3>
@@ -173,24 +175,19 @@
     <div class="modal-content">
         <h3 id="pin-modal-title" style="color:#FF5C77; font-size:18px;">ВХОД ДЛЯ ВОДИТЕЛЯ</h3>
         <p id="pin-modal-desc" style="font-size:13px; color:#ccc; line-height:1.35;">Войдите по PIN или выберите тариф ниже:</p>
-
         <button type="button" class="btn btn-outline-red" id="select-trial-btn" style="width:100%;">Получить PIN бесплатно на 180 дней</button>
         <div class="plans-grid" id="plans-grid"></div>
-
         <input type="tel" id="driver-phone-input" placeholder="Номер телефона">
         <input type="password" id="pin-input" maxlength="4" placeholder="Личный PIN-код (4 цифры)" inputmode="numeric">
         <p id="pin-error" style="color:#FF5C77; font-size:13px;" class="hidden"></p>
-
         <div id="login-actions-row" style="display:flex; gap:8px; margin-top:2px;">
             <button type="button" class="btn" id="login-driver-btn" style="flex:1;">Войти</button>
             <button type="button" class="btn btn-outline-red" id="close-pin-btn" style="flex:1;">Отмена</button>
         </div>
-
         <div id="pay-actions-row" class="hidden" style="display:flex; flex-direction:column; gap:8px; margin-top:2px;">
             <a id="robokassa-pay-btn" href="#" target="_blank" class="btn btn-green" style="width:100%;">Оплатить 300 ₽</a>
             <button type="button" class="btn btn-outline-red" id="close-pay-btn" style="width:100%;">Отмена</button>
         </div>
-
         <button type="button" class="link-btn hidden" id="back-to-login-btn" style="text-align:center;">Уже есть действующий PIN? Вернуться ко входу</button>
     </div>
 </div>
@@ -247,6 +244,7 @@
         }
         return res;
     }
+
     async function fsAdd(path, data) {
         const r = await fetch(fsUrl(path), {
             method: "POST",
@@ -323,6 +321,7 @@
     function sanitizePhone(raw) {
         return (raw || "").split("").filter(ch => (ch >= "0" && ch <= "9") || ch === "+").join("");
     }
+
     let map3d = null;
     let mapGeoWatchId = null;
 
@@ -420,6 +419,7 @@
 
             map3d.on("styledata", apply3DTheme);
             map3d.on("idle", apply3DTheme);
+
             async function fetchJsonTimeout(url, ms) {
                 const ctrl = new AbortController();
                 const timer = setTimeout(() => ctrl.abort(), ms);
@@ -578,6 +578,7 @@
         tick();
         waitTimer = setInterval(tick, 1000);
     }
+
     let suggestTimer = null;
     const suggestBox = document.getElementById("address-suggestions");
 
@@ -866,7 +867,7 @@
                 pending.forEach(o => {
                     const card = document.createElement("div");
                     card.className = "offer-card";
-                    card.innerHTML = '<div><div style="font-weight:800; font-size:19px; color:#FF5C77;">' + o.price + ' ₽</div><div style="font-size:12px; color:#ccc;">Водитель готов выехать</div></div><div style="display:flex; gap:6px;"><button type="button" class="btn btn-outline-red" style="padding:8px 10px; font-size:13px;" onclick="declineOffer(\'' + o.id + '\', \'' + o.price + '\')">Отказать</button><button type="button" class="btn btn-red-bright" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer(\'' + o.id + '\', \'' + o.price + '\', \'' + o.driverPhone + '\')">Согласен</button></div>';
+                    card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:800; font-size:21px; color:#FF5C77;">' + o.price + ' ₽</span><span style="font-size:12px; color:#ccc;">Водитель готов выехать</span></div><div style="display:flex; gap:8px; width:100%;"><button type="button" class="btn btn-outline-red" style="flex:1; padding:9px 8px; font-size:13px;" onclick="declineOffer(\'' + o.id + '\', \'' + o.price + '\')">Отказать</button><button type="button" class="btn btn-green" style="flex:1; padding:9px 8px; font-size:13px;" onclick="acceptOffer(\'' + o.id + '\', \'' + o.price + '\', \'' + o.driverPhone + '\')">Согласен</button></div>';
                     list.appendChild(card);
                 });
                 document.getElementById("offers-container").classList.toggle("hidden", pending.length === 0);
@@ -1122,6 +1123,7 @@
         step = 13;
         updateControls();
     });
+
     const rulesModal = document.getElementById("rules-modal");
     if (!localStorage.getItem("autopulse_rules_v1")) rulesModal.classList.remove("hidden");
     document.getElementById("open-rules-btn").addEventListener("click", () => rulesModal.classList.remove("hidden"));
@@ -1133,6 +1135,7 @@
     const pinModal = document.getElementById("pin-modal");
     const pinErr = document.getElementById("pin-error");
     let driverModalMode = "login";
+
     function renderDriverTariffs() {
         const trialUsed = localStorage.getItem("autopulse_trial_used_180_v1") === "1";
         const trialBtn = document.getElementById("select-trial-btn");
@@ -1194,6 +1197,7 @@
             backBtn.classList.add("hidden");
         }
     }
+
     document.getElementById("select-trial-btn").addEventListener("click", () => {
         if (localStorage.getItem("autopulse_trial_used_180_v1") === "1") return;
         driverModalMode = "trial";
@@ -1219,6 +1223,7 @@
             pinErr.classList.remove("hidden");
         }
     });
+
     document.getElementById("toggle-mode-btn").addEventListener("click", () => {
         if (isDriver) {
             isDriver = false;
@@ -1296,6 +1301,7 @@
             loginBtn.innerText = driverModalMode === "trial" ? "Активировать 180 дней" : "Войти";
         }
     });
+
     function enterDriverMode(phone) {
         localStorage.setItem("driver_phone", phone);
         driverPhone = phone;
