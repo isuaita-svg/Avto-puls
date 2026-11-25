@@ -74,7 +74,6 @@
     <span style="font-size: 14px; color: #FF5C77; font-weight: 700;">Предложения от водителей:</span>
     <div id="offers-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
 </div>
-
 <div id="extra-stop-choice" class="bottom-bar hidden">
     <button type="button" class="btn" id="no-extra-btn" style="flex:1;">Нет, сразу в точку Б</button>
     <button type="button" class="btn btn-outline-coral" id="add-extra-btn" style="flex:1;">Добавить адрес</button>
@@ -206,8 +205,10 @@
     function toFirestoreFields(obj) {
         const fields = {};
         for (const [k, v] of Object.entries(obj)) {
-            if (typeof v === "number") fields[k] = { integerValue: String(Math.floor(v)) };
-            else fields[k] = { stringValue: String(v) };
+            const item = (typeof v === "number")
+                ? { integerValue: String(Math.floor(v)) }
+                : { stringValue: String(v) };
+            Reflect.set(fields, k, item);
         }
         return { fields };
     }
@@ -216,9 +217,9 @@
         const res = { id: doc.name.split("/").pop() };
         if (!doc.fields) return res;
         for (const [k, v] of Object.entries(doc.fields)) {
-            if (v.stringValue !== undefined) res[k] = v.stringValue;
-            else if (v.integerValue !== undefined) res[k] = Number(v.integerValue);
-            else if (v.doubleValue !== undefined) res[k] = Number(v.doubleValue);
+            if (v.stringValue !== undefined) Reflect.set(res, k, v.stringValue);
+            else if (v.integerValue !== undefined) Reflect.set(res, k, Number(v.integerValue));
+            else if (v.doubleValue !== undefined) Reflect.set(res, k, Number(v.doubleValue));
         }
         return res;
     }
@@ -258,7 +259,6 @@
     async function fsDelete(path) {
         await fetch(fsUrl(path), { method: "DELETE" });
     }
-
     function getBrowserLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) return resolve(null);
@@ -294,6 +294,10 @@
         const places = ["ухта", "водный", "ярега", "шудаяг", "седью", "боровой", "сосногорск", "нижний одес", "сыктывкар", "емва"];
         if (places.some(p => low.includes(p)) || clean.includes(",")) return clean;
         return "Ухта, " + clean;
+    }
+
+    function sanitizePhone(raw) {
+        return (raw || "").split("").filter(ch => (ch >= "0" && ch <= "9") || ch === "+").join("");
     }
     let map3d = null;
     let mapGeoWatchId = null;
@@ -600,9 +604,9 @@
             hideSuggestions();
             return;
         }
-const parts = q.toLowerCase().replace(/,/g, " ").split(" ").filter(Boolean);
-const tokens = parts.filter(t => t.length >= 2);
-const houseNum = parts.find(t => /^\d/.test(t));
+        const parts = q.toLowerCase().replace(/,/g, " ").split(" ").filter(Boolean);
+        const tokens = parts.filter(t => t.length >= 2);
+        const houseNum = parts.find(t => /^\d/.test(t));
         const seen = [];
 
         LOCAL_ADDRESSES.forEach(item => {
@@ -639,7 +643,6 @@ const houseNum = parts.find(t => /^\d/.test(t));
             hideSuggestions();
         }
     });
-
     function getSelectedOptionsText() {
         const arr = [];
         if (optSeat) arr.push("Детское кресло");
@@ -785,54 +788,54 @@ const houseNum = parts.find(t => /^\d/.test(t));
                     orderStatus = ord.status || "accepted";
                     arrivedAt = Number(ord.arrivedAt || 0);
                     clientComing = ord.clientComing || "";
-                    document.getElementById("intrans
-it-title-text").innerText = (orderStatus === "to_extra") ? "Едем на заезд" : "В пути в точку Б";
-document.getElementById("intransit-dest-text").innerText = (orderStatus === "to_extra") ? extraStopAddr : toAddr;
-if (orderStatus === "arrived" || orderStatus === "arrived_extra") {
-if (!arrivedNotified) {
-arrivedNotified = true;
-addMsg("Водитель на месте! Началось бесплатное ожидание 3 минуты.", false);
-}
-startWaitCountdown();
-} else if (orderStatus === "in_transit" || orderStatus === "to_extra") {
-arrivedNotified = false;
-if (!inTransitNotified) {
-inTransitNotified = true;
-addMsg("Приятной поездки! Движемся по маршруту.", false);
-}
-} else {
-const distEl = document.getElementById("driver-dist-text");
-const mapBtn = document.getElementById("map-driver-btn");
-if (!isNaN(dLat) && !isNaN(dLon)) {
-lastDriverLat = dLat;
-lastDriverLon = dLon;
-mapBtn.classList.remove("hidden");
-const myLoc = await getBrowserLocation();
-distEl.innerText = myLoc ? calcDistanceText(myLoc.lat, myLoc.lon, dLat, dLon) : "Координаты получены";
-} else {
-mapBtn.classList.add("hidden");
-distEl.innerText = "Определяем координаты водителя...";
-}
-}
-updateControls();
-}
-} else if (step === 10) {
-const allOffers = await fsList("orders/" + currentOrderId + "/offers");
-const pending = allOffers.filter(o => o.status === "pending");
-const list = document.getElementById("offers-list");
-list.innerHTML = "";
-pending.forEach(o => {
-const card = document.createElement("div");
-card.className = "offer-card";
-card.innerHTML = '' + o.price + ' ₽Водитель готов выехатьОтказатьСогласен';
-list.appendChild(card);
-});
-document.getElementById("offers-container").classList.toggle("hidden", pending.length === 0);
-}
-};
-check();
-pollTimer = setInterval(check, 2500);
-}
+                    document.getElementById("intransit-title-text").innerText = (orderStatus === "to_extra") ? "Едем на заезд" : "В пути в точку Б";
+                    document.getElementById("intransit-dest-text").innerText = (orderStatus === "to_extra") ? extraStopAddr : toAddr;
+
+                    if (orderStatus === "arrived" || orderStatus === "arrived_extra") {
+                        if (!arrivedNotified) {
+                            arrivedNotified = true;
+                            addMsg("Водитель на месте! Началось бесплатное ожидание 3 минуты.", false);
+                        }
+                        startWaitCountdown();
+                    } else if (orderStatus === "in_transit" || orderStatus === "to_extra") {
+                        arrivedNotified = false;
+                        if (!inTransitNotified) {
+                            inTransitNotified = true;
+                            addMsg("Приятной поездки! Движемся по маршруту.", false);
+                        }
+                    } else {
+                        const distEl = document.getElementById("driver-dist-text");
+                        const mapBtn = document.getElementById("map-driver-btn");
+                        if (!isNaN(dLat) && !isNaN(dLon)) {
+                            lastDriverLat = dLat;
+                            lastDriverLon = dLon;
+                            mapBtn.classList.remove("hidden");
+                            const myLoc = await getBrowserLocation();
+                            distEl.innerText = myLoc ? calcDistanceText(myLoc.lat, myLoc.lon, dLat, dLon) : "Координаты получены";
+                        } else {
+                            mapBtn.classList.add("hidden");
+                            distEl.innerText = "Определяем координаты водителя...";
+                        }
+                    }
+                    updateControls();
+                }
+            } else if (step === 10) {
+                const allOffers = await fsList("orders/" + currentOrderId + "/offers");
+                const pending = allOffers.filter(o => o.status === "pending");
+                const list = document.getElementById("offers-list");
+                list.innerHTML = "";
+                pending.forEach(o => {
+                    const card = document.createElement("div");
+                    card.className = "offer-card";
+                    card.innerHTML = '<div><div style="font-weight:800; font-size:19px; color:#FF5C77;">' + o.price + ' ₽</div><div style="font-size:12px; color:#ccc;">Водитель готов выехать</div></div><div style="display:flex; gap:6px;"><button type="button" class="btn btn-outline-red" style="padding:8px 10px; font-size:13px;" onclick="declineOffer(\'' + o.id + '\', \'' + o.price + '\')">Отказать</button><button type="button" class="btn btn-red-bright" style="padding:8px 12px; font-size:13px;" onclick="acceptOffer(\'' + o.id + '\', \'' + o.price + '\', \'' + o.driverPhone + '\')">Согласен</button></div>';
+                    list.appendChild(card);
+                });
+                document.getElementById("offers-container").classList.toggle("hidden", pending.length === 0);
+            }
+        };
+        check();
+        pollTimer = setInterval(check, 2500);
+    }
     async function declineOffer(offerId, price) {
         if (!currentOrderId) return;
         await fsPatch("orders/" + currentOrderId + "/offers/" + offerId, { status: "declined" });
@@ -851,7 +854,7 @@ pollTimer = setInterval(check, 2500);
         document.getElementById("offers-container").classList.add("hidden");
         addMsg("Выбрал поездку за " + price + " ₽!", true);
         addMsg("Отлично! Водитель принял заявку и уже выехал к вам.", false);
-        const cleanPhone = selectedDriverPhone.replace(/[^\d+]/g, "");
+        const cleanPhone = sanitizePhone(selectedDriverPhone);
         document.getElementById("call-driver-btn").href = "tel:" + cleanPhone;
         step = 12;
         updateControls();
@@ -884,7 +887,7 @@ pollTimer = setInterval(check, 2500);
             openFullRoute(fromStr, extraStr, toStr, newStatus, loc ? String(loc.lat) : "", loc ? String(loc.lon) : "");
         }
     }
-        function startDriverPolling() {
+    function startDriverPolling() {
         stopTimers();
         const driverBox = document.getElementById("driver-box");
         let activeMineOrder = null;
@@ -975,7 +978,7 @@ pollTimer = setInterval(check, 2500);
                         badgeHtml = '<span class="status-pill" style="background:rgba(255,92,119,0.22);color:#FF5C77;border:1px solid #FF5C77;">К ПАССАЖИРУ</span>';
                     }
 
-                    const cleanClient = (o.phone || "").replace(/[^\d+]/g, "");
+                    const cleanClient = sanitizePhone(o.phone);
                     const safeFrom = (o.from || "").replace(/'/g, "");
                     const safeExtra = (o.extraStop || "").replace(/'/g, "");
                     const safeTo = (o.to || "").replace(/'/g, "");
@@ -998,258 +1001,275 @@ pollTimer = setInterval(check, 2500);
                         stageBtns += '<button type="button" class="btn" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'arrived_extra\', true, false, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">На месте (Заезд • 3 мин)</button>';
                     }
                     if (o.status === "to_extra" || o.status === "arrived_extra") {
-stageBtns += 'Едем дальше -> В точку Б';
-}
-actionHtml = 'Заказ принят • Цена: ' + o.price + ' ₽' +
-comingHtml +
-'<button type="button" class="btn btn-coral" style="width:100%; margin-bottom:8px;" onclick="openFullRoute('' + safeFrom + '', '' + safeExtra + '', '' + safeTo + '', '' + o.status + '', '' + (o.driverLat || "") + '', '' + (o.driverLon || "") + '')">Открыть 3D-навигатор' +
-stageBtns +
-'Позвонить пассажиру' +
-'Завершить поездку';
-} else {
-if (item.rawDist < 100000) {
-const dText = item.rawDist < 1000 ? (item.rawDist + " м от вас") : ((item.rawDist / 1000).toFixed(1) + " км от вас");
-badgeHtml = '' + dText + '';
-}
-const offers = await fsList("orders/" + o.id + "/offers");
-const myOffer = offers.find(off => off.driverPhone === driverPhone);
-if (myOffer) {
-if (myOffer.status === "pending") {
-actionHtml = 'Ваша цена ' + myOffer.price + ' ₽ отправлена. Ждем ответа...';
-} else if (myOffer.status === "declined") {
-actionHtml = 'Пассажир отказался от ' + myOffer.price + ' ₽. Предложите другую:Предложить';
-}
-} else {
-actionHtml = 'Предложить';
-}
-}
-const extraLineHtml = o.extraStop ? ('Заезд: ' + o.extraStop + '') : "";
-const optionsHtml = o.options ? ('Опции: ' + o.options + '') : "";
-html += 'Пассажир (А): ' + o.from + '' + badgeHtml + '' + extraLineHtml + 'Назначение (Б): ' + o.to + '' + optionsHtml + 'Телефон: ' + o.phone + '' + actionHtml + '';
-}
-driverBox.innerHTML = count > 0 ? html : 'Активных заявок пока нет
-(Водитель: ' + driverPhone + ')';
-};
-refresh();
-pollTimer = setInterval(refresh, 3000);
-}
- async function createOffer(orderId) {
-const inp = document.getElementById("price-" + orderId);
-if (inp && inp.value.trim()) {
-await fsAdd("orders/" + orderId + "/offers", { driverPhone: driverPhone, price: inp.value.trim(), status: "pending" });
-inp.blur();
-}
-}
-async function updateOffer(orderId, offerId) {
-const inp = document.getElementById("price-" + orderId);
-if (inp && inp.value.trim()) {
-await fsPatch("orders/" + orderId + "/offers/" + offerId, { price: inp.value.trim(), status: "pending" });
-inp.blur();
-}
-}
-async function cleanAndDeleteOrder(id) {
-if (!id) return;
-const offers = await fsList("orders/" + id + "/offers");
-for (const off of offers) {
-if (off.id) await fsDelete("orders/" + id + "/offers/" + off.id);
-}
-await fsPatch("orders/" + id, { status: "completed" });
-await fsDelete("orders/" + id);
-}
-async function completeOrder(id) {
-await cleanAndDeleteOrder(id);
-}
-document.getElementById("send-btn").addEventListener("click", handleSend);
-chatInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleSend(); });
-document.getElementById("new-order-btn").addEventListener("click", resetChat);
-document.getElementById("cancel-order-btn").addEventListener("click", async () => {
-stopTimers();
-if (currentOrderId) await cleanAndDeleteOrder(currentOrderId);
-document.getElementById("offers-container").classList.add("hidden");
-addMsg("Отменить заявку", true);
-addMsg("Заявка полностью отменена.", false);
-step = 13;
-updateControls();
-});
+                        stageBtns += '<button type="button" class="btn btn-red-bright" style="width:100%;margin-bottom:8px;" onclick="setOrderStage(\'' + o.id + '\', \'in_transit\', false, true, \'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\')">Едем дальше -> В точку Б</button>';
+                    }
+
+                    actionHtml = '<p style="color:#10B981; font-weight:bold; margin-bottom:8px;">Заказ принят • Цена: ' + o.price + ' ₽</p>' +
+                        comingHtml +
+                        '<button type="button" class="btn btn-coral" style="width:100%; margin-bottom:8px;" onclick="openFullRoute(\'' + safeFrom + '\', \'' + safeExtra + '\', \'' + safeTo + '\', \'' + o.status + '\', \'' + (o.driverLat || "") + '\', \'' + (o.driverLon || "") + '\')">Открыть 3D-навигатор</button>' +
+                        stageBtns +
+                        '<a href="tel:' + cleanClient + '" class="btn btn-outline-coral" style="width:100%; margin-bottom:8px;">Позвонить пассажиру</a>' +
+                        '<button type="button" class="btn btn-green" style="width:100%;" onclick="completeOrder(\'' + o.id + '\')">Завершить поездку</button>';
+                } else {
+                    if (item.rawDist < 100000) {
+                        const dText = item.rawDist < 1000 ? (item.rawDist + " м от вас") : ((item.rawDist / 1000).toFixed(1) + " км от вас");
+                        badgeHtml = '<span class="status-pill" style="background:rgba(16,185,129,0.18);color:#10B981;border:1px solid #10B981;">' + dText + '</span>';
+                    }
+                    const offers = await fsList("orders/" + o.id + "/offers");
+                    const myOffer = offers.find(off => off.driverPhone === driverPhone);
+                    if (myOffer) {
+                        if (myOffer.status === "pending") {
+                            actionHtml = '<p style="color:#FF5C77; font-size:14px;">Ваша цена ' + myOffer.price + ' ₽ отправлена. Ждем ответа...</p>';
+                        } else if (myOffer.status === "declined") {
+                            actionHtml = '<p style="color:#FF5C77; font-size:13px; margin-bottom:6px;">Пассажир отказался от ' + myOffer.price + ' ₽. Предложите другую:</p><div style="display:flex; gap:8px;"><input type="number" id="price-' + o.id + '" placeholder="Новая цена (₽)"><button type="button" class="btn" onclick="updateOffer(\'' + o.id + '\', \'' + myOffer.id + '\')">Предложить</button></div>';
+                        }
+                    } else {
+                        actionHtml = '<div style="display:flex; gap:8px;"><input type="number" id="price-' + o.id + '" placeholder="Ваша цена (₽)"><button type="button" class="btn" onclick="createOffer(\'' + o.id + '\')">Предложить</button></div>';
+                    }
+                }
+                const extraLineHtml = o.extraStop ? ('<strong style="color:#FF9E00;">Заезд: ' + o.extraStop + '</strong>') : "";
+                const optionsHtml = o.options ? ('<div style="background:rgba(255,158,0,0.16);border:1px solid #FF9E00;border-radius:10px;padding:5px 10px;color:#FF9E00;font-weight:700;font-size:13px;">Опции: ' + o.options + '</div>') : "";
+                html += '<div class="card ' + (isMine ? 'accepted' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пассажир (А): ' + o.from + '</strong>' + badgeHtml + '</div>' + extraLineHtml + '<strong>Назначение (Б): ' + o.to + '</strong>' + optionsHtml + '<span style="color:#FF5C77; font-weight:600;">Телефон: ' + o.phone + '</span><div style="margin-top:8px;">' + actionHtml + '</div></div>';
+            }
+            driverBox.innerHTML = count > 0 ? html : '<p style="text-align:center; color:#FF5C77; margin-top:40px;">Активных заявок пока нет<br>(Водитель: ' + driverPhone + ')</p>';
+        };
+        refresh();
+        pollTimer = setInterval(refresh, 3000);
+    }
+    async function createOffer(orderId) {
+        const inp = document.getElementById("price-" + orderId);
+        if (inp && inp.value.trim()) {
+            await fsAdd("orders/" + orderId + "/offers", { driverPhone: driverPhone, price: inp.value.trim(), status: "pending" });
+            inp.blur();
+        }
+    }
+
+    async function updateOffer(orderId, offerId) {
+        const inp = document.getElementById("price-" + orderId);
+        if (inp && inp.value.trim()) {
+            await fsPatch("orders/" + orderId + "/offers/" + offerId, { price: inp.value.trim(), status: "pending" });
+            inp.blur();
+        }
+    }
+
+    async function cleanAndDeleteOrder(id) {
+        if (!id) return;
+        const offers = await fsList("orders/" + id + "/offers");
+        for (const off of offers) {
+            if (off.id) await fsDelete("orders/" + id + "/offers/" + off.id);
+        }
+        await fsPatch("orders/" + id, { status: "completed" });
+        await fsDelete("orders/" + id);
+    }
+
+    async function completeOrder(id) {
+        await cleanAndDeleteOrder(id);
+    }
+
+    document.getElementById("send-btn").addEventListener("click", handleSend);
+    chatInput.addEventListener("keypress", (e) => { if (e.key === "Enter") handleSend(); });
+    document.getElementById("new-order-btn").addEventListener("click", resetChat);
+
+    document.getElementById("cancel-order-btn").addEventListener("click", async () => {
+        stopTimers();
+        if (currentOrderId) await cleanAndDeleteOrder(currentOrderId);
+        document.getElementById("offers-container").classList.add("hidden");
+        addMsg("Отменить заявку", true);
+        addMsg("Заявка полностью отменена.", false);
+        step = 13;
+        updateControls();
+    });
     const rulesModal = document.getElementById("rules-modal");
-if (!localStorage.getItem("autopulse_rules_v1")) rulesModal.classList.remove("hidden");
-document.getElementById("open-rules-btn").addEventListener("click", () => rulesModal.classList.remove("hidden"));
-document.getElementById("accept-rules-btn").addEventListener("click", () => {
-localStorage.setItem("autopulse_rules_v1", "1");
-rulesModal.classList.add("hidden");
-});
-const pinModal = document.getElementById("pin-modal");
-const pinErr = document.getElementById("pin-error");
-let driverModalMode = "login";
-function renderDriverTariffs() {
-const trialUsed = localStorage.getItem("autopulse_trial_used_180_v1") === "1";
-const trialBtn = document.getElementById("select-trial-btn");
-trialBtn.disabled = trialUsed;
-trialBtn.innerText = trialUsed ? "180 дней бесплатно • Использовано" : "Получить PIN бесплатно на 180 дней";
-trialBtn.className = "btn " + (driverModalMode === "trial" ? "btn-coral" : "btn-outline-red");
-const grid = document.getElementById("plans-grid");
-grid.innerHTML = "";
-DRIVER_PLANS.forEach(p => {
-const btn = document.createElement("button");
-btn.type = "button";
-const isSel = (driverModalMode === "paid" && selectedPlan.days === p.days);
-btn.className = "btn " + (isSel ? "btn-green" : "btn-outline-red");
-btn.style.padding = "9px 6px";
-btn.style.fontSize = "12px";
-btn.innerText = p.label + " • " + p.price + " ₽";
-btn.onclick = () => {
-selectedPlan = p;
-driverModalMode = "paid";
-pinErr.classList.add("hidden");
-renderDriverTariffs();
-};
-grid.appendChild(btn);
-});
-const phone = document.getElementById("driver-phone-input").value.trim();
-const pinInp = document.getElementById("pin-input");
-const loginRow = document.getElementById("login-actions-row");
-const payRow = document.getElementById("pay-actions-row");
-const backBtn = document.getElementById("back-to-login-btn");
-if (driverModalMode === "trial") {
-document.getElementById("pin-modal-title").innerText = "БЕСПЛАТНО НА 180 ДНЕЙ";
-document.getElementById("pin-modal-desc").innerText = "Выдаётся единоразово. Укажите телефон и придумайте 4-значный PIN:";
-pinInp.classList.remove("hidden");
-pinInp.placeholder = "Придумайте PIN (4 цифры)";
-document.getElementById("login-driver-btn").innerText = "Активировать 180 дней";
-loginRow.classList.remove("hidden");
-payRow.classList.add("hidden");
-backBtn.classList.remove("hidden");
-} else if (driverModalMode === "paid") {
-document.getElementById("pin-modal-title").innerText = "ПОКУПКА ТАРИФА";
-document.getElementById("pin-modal-desc").innerText = "Укажите номер телефона для активации тарифа «" + selectedPlan.label + "»:";
-pinInp.classList.add("hidden");
-loginRow.classList.add("hidden");
-payRow.classList.remove("hidden");
-backBtn.classList.remove("hidden");
-const payBtn = document.getElementById("robokassa-pay-btn");
-payBtn.innerText = "Оплатить " + selectedPlan.price + " ₽ (" + selectedPlan.label + ")";
-payBtn.href = PAY_WORKER_URL + "?phone=" + encodeURIComponent(phone) + "&days=" + selectedPlan.days + "∑=" + selectedPlan.price;
-} else {
-document.getElementById("pin-modal-title").innerText = "ВХОД ДЛЯ ВОДИТЕЛЯ";
-document.getElementById("pin-modal-desc").innerText = "Войдите по PIN или выберите тариф ниже:";
-pinInp.classList.remove("hidden");
-pinInp.placeholder = "Личный PIN-код (4 цифры)";
-document.getElementById("login-driver-btn").innerText = "Войти";
-loginRow.classList.remove("hidden");
-payRow.classList.add("hidden");
-backBtn.classList.add("hidden");
-}
-}
- document.getElementById("select-trial-btn").addEventListener("click", () => {
-if (localStorage.getItem("autopulse_trial_used_180_v1") === "1") return;
-driverModalMode = "trial";
-pinErr.classList.add("hidden");
-renderDriverTariffs();
-});
-document.getElementById("back-to-login-btn").addEventListener("click", () => {
-driverModalMode = "login";
-pinErr.classList.add("hidden");
-renderDriverTariffs();
-});
-document.getElementById("driver-phone-input").addEventListener("input", () => {
-if (driverModalMode === "paid") renderDriverTariffs();
-});
-document.getElementById("robokassa-pay-btn").addEventListener("click", (e) => {
-const phone = document.getElementById("driver-phone-input").value.trim();
-if (phone.length < 6) {
-e.preventDefault();
-pinErr.innerText = "Сначала введите корректный номер телефона";
-pinErr.classList.remove("hidden");
-}
-});
-document.getElementById("toggle-mode-btn").addEventListener("click", () => {
-if (isDriver) {
-isDriver = false;
-stopTimers();
-document.getElementById("driver-badge").classList.add("hidden");
-document.getElementById("toggle-mode-btn").innerText = "Водитель";
-document.getElementById("driver-box").classList.add("hidden");
-chatBox.classList.remove("hidden");
-if (currentOrderId && (step === 10 || step === 12)) startPassengerPolling();
-updateControls();
-} else {
-driverModalMode = "login";
-pinErr.classList.add("hidden");
-document.getElementById("driver-phone-input").value = localStorage.getItem("driver_phone") || "";
-renderDriverTariffs();
-pinModal.classList.remove("hidden");
-}
-});
-document.getElementById("close-pin-btn").addEventListener("click", () => pinModal.classList.add("hidden"));
-document.getElementById("close-pay-btn").addEventListener("click", () => pinModal.classList.add("hidden"));
+    if (!localStorage.getItem("autopulse_rules_v1")) rulesModal.classList.remove("hidden");
+    document.getElementById("open-rules-btn").addEventListener("click", () => rulesModal.classList.remove("hidden"));
+    document.getElementById("accept-rules-btn").addEventListener("click", () => {
+        localStorage.setItem("autopulse_rules_v1", "1");
+        rulesModal.classList.add("hidden");
+    });
+
+    const pinModal = document.getElementById("pin-modal");
+    const pinErr = document.getElementById("pin-error");
+    let driverModalMode = "login";
+    function renderDriverTariffs() {
+        const trialUsed = localStorage.getItem("autopulse_trial_used_180_v1") === "1";
+        const trialBtn = document.getElementById("select-trial-btn");
+        trialBtn.disabled = trialUsed;
+        trialBtn.innerText = trialUsed ? "180 дней бесплатно • Использовано" : "Получить PIN бесплатно на 180 дней";
+        trialBtn.className = "btn " + (driverModalMode === "trial" ? "btn-coral" : "btn-outline-red");
+
+        const grid = document.getElementById("plans-grid");
+        grid.innerHTML = "";
+        DRIVER_PLANS.forEach(p => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            const isSel = (driverModalMode === "paid" && selectedPlan.days === p.days);
+            btn.className = "btn " + (isSel ? "btn-green" : "btn-outline-red");
+            btn.style.padding = "9px 6px";
+            btn.style.fontSize = "12px";
+            btn.innerText = p.label + " • " + p.price + " ₽";
+            btn.onclick = () => {
+                selectedPlan = p;
+                driverModalMode = "paid";
+                pinErr.classList.add("hidden");
+                renderDriverTariffs();
+            };
+            grid.appendChild(btn);
+        });
+        const phone = document.getElementById("driver-phone-input").value.trim();
+        const pinInp = document.getElementById("pin-input");
+        const loginRow = document.getElementById("login-actions-row");
+        const payRow = document.getElementById("pay-actions-row");
+        const backBtn = document.getElementById("back-to-login-btn");
+
+        if (driverModalMode === "trial") {
+            document.getElementById("pin-modal-title").innerText = "БЕСПЛАТНО НА 180 ДНЕЙ";
+            document.getElementById("pin-modal-desc").innerText = "Выдаётся единоразово. Укажите телефон и придумайте 4-значный PIN:";
+            pinInp.classList.remove("hidden");
+            pinInp.placeholder = "Придумайте PIN (4 цифры)";
+            document.getElementById("login-driver-btn").innerText = "Активировать 180 дней";
+            loginRow.classList.remove("hidden");
+            payRow.classList.add("hidden");
+            backBtn.classList.remove("hidden");
+        } else if (driverModalMode === "paid") {
+            document.getElementById("pin-modal-title").innerText = "ПОКУПКА ТАРИФА";
+            document.getElementById("pin-modal-desc").innerText = "Укажите номер телефона для активации тарифа «" + selectedPlan.label + "»:";
+            pinInp.classList.add("hidden");
+            loginRow.classList.add("hidden");
+            payRow.classList.remove("hidden");
+            backBtn.classList.remove("hidden");
+            const payBtn = document.getElementById("robokassa-pay-btn");
+            payBtn.innerText = "Оплатить " + selectedPlan.price + " ₽ (" + selectedPlan.label + ")";
+            payBtn.href = PAY_WORKER_URL + "?phone=" + encodeURIComponent(phone) + "&days=" + selectedPlan.days + "&sum=" + selectedPlan.price;
+        } else {
+            document.getElementById("pin-modal-title").innerText = "ВХОД ДЛЯ ВОДИТЕЛЯ";
+            document.getElementById("pin-modal-desc").innerText = "Войдите по PIN или выберите тариф ниже:";
+            pinInp.classList.remove("hidden");
+            pinInp.placeholder = "Личный PIN-код (4 цифры)";
+            document.getElementById("login-driver-btn").innerText = "Войти";
+            loginRow.classList.remove("hidden");
+            payRow.classList.add("hidden");
+            backBtn.classList.add("hidden");
+        }
+    }
+    document.getElementById("select-trial-btn").addEventListener("click", () => {
+        if (localStorage.getItem("autopulse_trial_used_180_v1") === "1") return;
+        driverModalMode = "trial";
+        pinErr.classList.add("hidden");
+        renderDriverTariffs();
+    });
+
+    document.getElementById("back-to-login-btn").addEventListener("click", () => {
+        driverModalMode = "login";
+        pinErr.classList.add("hidden");
+        renderDriverTariffs();
+    });
+
+    document.getElementById("driver-phone-input").addEventListener("input", () => {
+        if (driverModalMode === "paid") renderDriverTariffs();
+    });
+
+    document.getElementById("robokassa-pay-btn").addEventListener("click", (e) => {
+        const phone = document.getElementById("driver-phone-input").value.trim();
+        if (phone.length < 6) {
+            e.preventDefault();
+            pinErr.innerText = "Сначала введите корректный номер телефона";
+            pinErr.classList.remove("hidden");
+        }
+    });
+    document.getElementById("toggle-mode-btn").addEventListener("click", () => {
+        if (isDriver) {
+            isDriver = false;
+            stopTimers();
+            document.getElementById("driver-badge").classList.add("hidden");
+            document.getElementById("toggle-mode-btn").innerText = "Водитель";
+            document.getElementById("driver-box").classList.add("hidden");
+            chatBox.classList.remove("hidden");
+            if (currentOrderId && (step === 10 || step === 12)) startPassengerPolling();
+            updateControls();
+        } else {
+            driverModalMode = "login";
+            pinErr.classList.add("hidden");
+            document.getElementById("driver-phone-input").value = localStorage.getItem("driver_phone") || "";
+            renderDriverTariffs();
+            pinModal.classList.remove("hidden");
+        }
+    });
+
+    document.getElementById("close-pin-btn").addEventListener("click", () => pinModal.classList.add("hidden"));
+    document.getElementById("close-pay-btn").addEventListener("click", () => pinModal.classList.add("hidden"));
     document.getElementById("login-driver-btn").addEventListener("click", async () => {
-const phone = document.getElementById("driver-phone-input").value.trim();
-const pin = document.getElementById("pin-input").value.trim();
-const loginBtn = document.getElementById("login-driver-btn");
-if (phone.length < 6 || pin.length < 4) {
-pinErr.innerText = "Введите корректный телефон и 4-значный PIN";
-pinErr.classList.remove("hidden");
-return;
-}
-loginBtn.disabled = true;
-loginBtn.innerText = "Проверка...";
-pinErr.classList.add("hidden");
-try {
-const allDrivers = await fsList("drivers");
-const existing = allDrivers.find(d => (d.phone || "").trim() === phone);
-if (driverModalMode === "trial") {
-if (localStorage.getItem("autopulse_trial_used_180_v1") === "1" || existing) {
-localStorage.setItem("autopulse_trial_used_180_v1", "1");
-selectedPlan = DRIVER_PLANS.at(0);
-driverModalMode = "paid";
-pinErr.innerText = "Бесплатный период на 180 дней выдаётся единоразово. Выберите платный тариф:";
-pinErr.classList.remove("hidden");
-renderDriverTariffs();
-} else {
-const expiresAt = Date.now() + 180 * 24 * 60 * 60 * 1000;
-await fsAdd("drivers", { phone: phone, pin: pin, trialUsed: "yes", expiresAt: expiresAt });
-localStorage.setItem("autopulse_trial_used_180_v1", "1");
-enterDriverMode(phone);
-}
-} else {
-if (!existing || (existing.pin || "").trim() !== pin) {
-pinErr.innerText = "Неверный номер телефона или PIN-код";
-pinErr.classList.remove("hidden");
-} else if (existing.expiresAt && Date.now() > Number(existing.expiresAt)) {
-localStorage.setItem("autopulse_trial_used_180_v1", "1");
-selectedPlan = DRIVER_PLANS.at(0);
-driverModalMode = "paid";
-pinErr.innerText = "Пробный период или подписка истекли. Выберите платный тариф для продления:";
-pinErr.classList.remove("hidden");
-renderDriverTariffs();
-} else {
-enterDriverMode(phone);
-}
-}
-} catch (e) {
-pinErr.innerText = "Ошибка сети. Проверьте интернет и попробуйте снова.";
-pinErr.classList.remove("hidden");
-} finally {
-loginBtn.disabled = false;
-loginBtn.innerText = driverModalMode === "trial" ? "Активировать 180 дней" : "Войти";
-}
-});
-function enterDriverMode(phone) {
-localStorage.setItem("driver_phone", phone);
-driverPhone = phone;
-isDriver = true;
-pinModal.classList.add("hidden");
-document.getElementById("pin-input").value = "";
-document.getElementById("driver-badge").classList.remove("hidden");
-document.getElementById("toggle-mode-btn").innerText = "Пассажир";
-chatBox.classList.add("hidden");
-hideSuggestions();
-document.getElementById("offers-container").classList.add("hidden");
-["extra-stop-choice", "trip-options-choice", "passenger-controls", "active-controls", "new-order-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
-document.getElementById("driver-box").classList.remove("hidden");
-startDriverPolling();
-}
-resetChat();
+        const phone = document.getElementById("driver-phone-input").value.trim();
+        const pin = document.getElementById("pin-input").value.trim();
+        const loginBtn = document.getElementById("login-driver-btn");
+
+        if (phone.length < 6 || pin.length < 4) {
+            pinErr.innerText = "Введите корректный телефон и 4-значный PIN";
+            pinErr.classList.remove("hidden");
+            return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.innerText = "Проверка...";
+        pinErr.classList.add("hidden");
+
+        try {
+            const allDrivers = await fsList("drivers");
+            const existing = allDrivers.find(d => (d.phone || "").trim() === phone);
+
+            if (driverModalMode === "trial") {
+                if (localStorage.getItem("autopulse_trial_used_180_v1") === "1" || existing) {
+                    localStorage.setItem("autopulse_trial_used_180_v1", "1");
+                    selectedPlan = DRIVER_PLANS.at(0);
+                    driverModalMode = "paid";
+                    pinErr.innerText = "Бесплатный период на 180 дней выдаётся единоразово. Выберите платный тариф:";
+                    pinErr.classList.remove("hidden");
+                    renderDriverTariffs();
+                } else {
+                    const expiresAt = Date.now() + 180 * 24 * 60 * 60 * 1000;
+                    await fsAdd("drivers", { phone: phone, pin: pin, trialUsed: "yes", expiresAt: expiresAt });
+                    localStorage.setItem("autopulse_trial_used_180_v1", "1");
+                    enterDriverMode(phone);
+                }
+            } else {
+                if (!existing || (existing.pin || "").trim() !== pin) {
+                    pinErr.innerText = "Неверный номер телефона или PIN-код";
+                    pinErr.classList.remove("hidden");
+                } else if (existing.expiresAt && Date.now() > Number(existing.expiresAt)) {
+                    localStorage.setItem("autopulse_trial_used_180_v1", "1");
+                    selectedPlan = DRIVER_PLANS.at(0);
+                    driverModalMode = "paid";
+                    pinErr.innerText = "Пробный период или подписка истекли. Выберите платный тариф для продления:";
+                    pinErr.classList.remove("hidden");
+                    renderDriverTariffs();
+                } else {
+                    enterDriverMode(phone);
+                }
+            }
+        } catch (e) {
+            pinErr.innerText = "Ошибка сети. Проверьте интернет и попробуйте снова.";
+            pinErr.classList.remove("hidden");
+        } finally {
+            loginBtn.disabled = false;
+            loginBtn.innerText = driverModalMode === "trial" ? "Активировать 180 дней" : "Войти";
+        }
+    });
+    function enterDriverMode(phone) {
+        localStorage.setItem("driver_phone", phone);
+        driverPhone = phone;
+        isDriver = true;
+        pinModal.classList.add("hidden");
+        document.getElementById("pin-input").value = "";
+        document.getElementById("driver-badge").classList.remove("hidden");
+        document.getElementById("toggle-mode-btn").innerText = "Пассажир";
+        chatBox.classList.add("hidden");
+        hideSuggestions();
+        document.getElementById("offers-container").classList.add("hidden");
+        ["extra-stop-choice", "trip-options-choice", "passenger-controls", "active-controls", "new-order-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
+        document.getElementById("driver-box").classList.remove("hidden");
+        startDriverPolling();
+    }
+
+    resetChat();
 </script>
 </body>
 </html>
