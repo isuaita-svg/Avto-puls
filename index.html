@@ -614,7 +614,7 @@
         renderSuggestionList(seen);
 
         try {
-            const streetPart = q.split(",")[0].trim();
+            const streetPart = q.split(",").at(0).trim();
             const r = await fetch(S + "photon.komoot.io/api/?q=" + encodeURIComponent(streetPart) + "&lat=63.567&lon=53.683&limit=6");
             if (!r.ok) return;
             const data = await r.json();
