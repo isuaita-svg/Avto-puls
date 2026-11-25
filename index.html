@@ -600,8 +600,9 @@
             hideSuggestions();
             return;
         }
-        const tokens = q.toLowerCase().split(/[\s,]+/).filter(t => t.length >= 2);
-        const houseNum = q.toLowerCase().split(/[\s,]+/).find(t => /^\d/.test(t));
+const parts = q.toLowerCase().replace(/,/g, " ").split(" ").filter(Boolean);
+const tokens = parts.filter(t => t.length >= 2);
+const houseNum = parts.find(t => /^\d/.test(t));
         const seen = [];
 
         LOCAL_ADDRESSES.forEach(item => {
