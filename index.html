@@ -18,7 +18,7 @@
         .header-actions { display: flex; align-items: center; gap: 8px; }
         .link-btn { background: none; border: none; color: #FF5C77; font-size: 13px; font-weight: 700; cursor: pointer; padding: 6px; }
         .speed-bar { background: #17050A; width: 100%; height: 10px; display: block; border-bottom: 1px solid rgba(255,30,66,0.3); }
-        #chat-box, #driver-box { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+        #chat-box, #driver-box, #driver-chat-box { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
         .msg { max-width: 82%; padding: 11px 14px; border-radius: 18px; font-size: 15px; line-height: 1.4; word-wrap: break-word; }
         .msg.bot { background-color: #220810; color: #ffffff; align-self: flex-start; border: 1.2px solid rgba(255,92,119,0.65); box-shadow: 0 0 10px rgba(255,30,66,0.18); }
         .msg.user { background-color: rgba(255,30,66,0.25); color: #ffffff; align-self: flex-end; border: 1.2px solid #FF1E42; box-shadow: 0 0 12px rgba(255,30,66,0.35); }
@@ -110,7 +110,13 @@
             <span id="opt-pet-lbl" style="font-size:12px;">Животные</span>
         </button>
     </div>
-    <button type="button" class="btn btn-green" id="confirm-options-btn" style="width:100%;">Без доп. опций -> Телефон</button>
+    <button type="button" class="btn btn-green" id="confirm-options-btn" style="width:100%;">Без доп. опций -> Оплата</button>
+</div>
+
+<div id="payment-method-choice" class="bottom-bar hidden">
+    <button type="button" class="btn btn-outline-coral" style="flex:1;" onclick="choosePayment('Наличные')">Наличные</button>
+    <button type="button" class="btn btn-outline-coral" style="flex:1;" onclick="choosePayment('СБП')">СБП</button>
+    <button type="button" class="btn btn-outline-coral" style="flex:1;" onclick="choosePayment('Сбер')">Сбер</button>
 </div>
 
 <div id="address-suggestions" class="hidden" style="background:#17050A; border-top:1px solid rgba(255,30,66,0.45); padding:8px 12px; display:flex; flex-direction:column; gap:6px; max-height:32vh; overflow-y:auto;"></div>
@@ -148,7 +154,24 @@
     <button type="button" class="btn" id="new-order-btn" style="width: 100%;">Новая заявка</button>
 </div>
 
+<div id="driver-top-panel" class="hidden" style="background:#17050A; border-bottom:1px solid rgba(255,30,66,0.35); padding:8px 12px; display:flex; flex-direction:column; gap:8px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+        <span id="driver-sub-left" style="color:#10B981; font-weight:700;">Подписка активна</span>
+        <span id="driver-phone-lbl" style="color:#FF5C77; font-weight:600;"></span>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <button type="button" class="btn" id="tab-orders-btn" style="flex:1; padding:8px;">Заказы</button>
+        <button type="button" class="btn btn-outline-coral" id="tab-chat-btn" style="flex:1; padding:8px;">Чат водителей</button>
+    </div>
+</div>
+
 <div id="driver-box" class="hidden"></div>
+
+<div id="driver-chat-box" class="hidden"></div>
+<div id="driver-chat-controls" class="bottom-bar hidden">
+    <input type="text" id="driver-chat-input" placeholder="Сообщение водителям...">
+    <button type="button" class="btn" id="driver-chat-send">Отпр.</button>
+</div>
 
 <div id="map-modal" class="modal hidden">
     <div class="modal-content">
@@ -511,8 +534,8 @@
         document.getElementById("map-modal").classList.add("hidden");
     });
     let step = 0, fromAddr = "", toAddr = "", extraStopAddr = "", userPhone = "", driverPhone = "", selectedDriverPhone = "", currentOrderId = null;
-    let optSeat = false, optBag = false, optPet = false;
-    let isDriver = false, pollTimer = null, gpsTimer = null, waitTimer = null;
+    let optSeat = false, optBag = false, optPet = false, paymentMethod = "Наличные";
+    let isDriver = false, driverTab = "orders", pollTimer = null, gpsTimer = null, waitTimer = null;
     let lastDriverLat = null, lastDriverLon = null, orderStatus = "searching", arrivedAt = 0, clientComing = "", arrivedNotified = false, inTransitNotified = false;
 
     const chatBox = document.getElementById("chat-box");
@@ -531,6 +554,7 @@
         const isMovingAny = (orderStatus === "to_extra" || orderStatus === "in_transit");
         document.getElementById("extra-stop-choice").classList.toggle("hidden", step !== 2);
         document.getElementById("trip-options-choice").classList.toggle("hidden", step !== 5);
+        document.getElementById("payment-method-choice").classList.toggle("hidden", step !== 6);
         document.getElementById("passenger-controls").classList.toggle("hidden", !(step === 0 || step === 1 || step === 3 || step === 4));
         document.getElementById("active-controls").classList.toggle("hidden", step !== 10 && step !== 12);
         document.getElementById("call-driver-btn").classList.toggle("hidden", !(step === 12 && selectedDriverPhone));
@@ -690,7 +714,7 @@
             it.btn.style.boxShadow = it.active ? "0 0 14px rgba(255,158,0,0.45)" : "0 0 10px rgba(255,30,66,0.3)";
         });
         const chosen = getSelectedOptionsText();
-        document.getElementById("confirm-options-btn").innerText = chosen ? "Далее -> Телефон" : "Без доп. опций -> Телефон";
+        document.getElementById("confirm-options-btn").innerText = chosen ? "Далее -> Способ оплаты" : "Без доп. опций -> Оплата";
     }
 
     function askTripOptions() {
@@ -710,10 +734,18 @@
     document.getElementById("confirm-options-btn").addEventListener("click", () => {
         const chosen = getSelectedOptionsText();
         addMsg(chosen ? ("Опции: " + chosen) : "Без доп. опций", true);
+        addMsg("Выберите способ оплаты:", false);
+        step = 6;
+        updateControls();
+    });
+
+    function choosePayment(method) {
+        paymentMethod = method;
+        addMsg("Оплата: " + method, true);
         addMsg("Укажите ваш номер телефона:", false);
         step = 4;
         updateControls();
-    });
+    }
 
     document.getElementById("no-extra-btn").addEventListener("click", () => {
         extraStopAddr = "";
@@ -741,7 +773,7 @@
         hideSuggestions();
         localStorage.removeItem("autopulse_active_order_id");
         chatBox.innerHTML = "";
-        currentOrderId = null; selectedDriverPhone = ""; extraStopAddr = ""; optSeat = false; optBag = false; optPet = false;
+        currentOrderId = null; selectedDriverPhone = ""; extraStopAddr = ""; optSeat = false; optBag = false; optPet = false; paymentMethod = "Наличные";
         lastDriverLat = null; lastDriverLon = null;
         orderStatus = "searching"; arrivedAt = 0; clientComing = ""; arrivedNotified = false; inTransitNotified = false; step = 0;
         addMsg("Привет! Это АвтоПульс. Откуда вас забрать?", false);
@@ -765,7 +797,7 @@
             const loc = await getBrowserLocation();
             try {
                 const created = await fsAdd("orders", {
-                    from: fromAddr, to: toAddr, extraStop: extraStopAddr, options: getSelectedOptionsText(),
+                    from: fromAddr, to: toAddr, extraStop: extraStopAddr, options: getSelectedOptionsText(), payment: paymentMethod,
                     phone: userPhone, driverPhone: "", price: "",
                     status: "searching", createdAt: Date.now(), arrivedAt: 0, clientComing: "",
                     driverLat: "", driverLon: "",
@@ -952,6 +984,10 @@
 
         const refresh = async () => {
             if (!isDriver) return;
+            if (driverTab === "chat") {
+                await loadDriverChat();
+                return;
+            }
             if (document.activeElement && document.activeElement.tagName === "INPUT") return;
             const allOrders = await fsList("orders");
             const now = Date.now();
@@ -1070,13 +1106,73 @@
                 }
                 const extraLineHtml = o.extraStop ? ('<strong style="color:#FF9E00;">Заезд: ' + o.extraStop + '</strong>') : "";
                 const optionsHtml = o.options ? ('<div style="background:rgba(255,158,0,0.16);border:1px solid #FF9E00;border-radius:10px;padding:5px 10px;color:#FF9E00;font-weight:700;font-size:13px;">Опции: ' + o.options + '</div>') : "";
-                html += '<div class="card ' + (isMine ? 'accepted' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пассажир (А): ' + o.from + '</strong>' + badgeHtml + '</div>' + extraLineHtml + '<strong>Назначение (Б): ' + o.to + '</strong>' + optionsHtml + '<span style="color:#FF5C77; font-weight:600;">Телефон: ' + o.phone + '</span><div style="margin-top:8px;">' + actionHtml + '</div></div>';
+                const paymentHtml = o.payment ? ('<div style="background:rgba(16,185,129,0.16);border:1px solid #10B981;border-radius:10px;padding:5px 10px;color:#10B981;font-weight:700;font-size:13px;">Оплата: ' + o.payment + '</div>') : "";
+                html += '<div class="card ' + (isMine ? 'accepted' : '') + '"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><strong>Пассажир (А): ' + o.from + '</strong>' + badgeHtml + '</div>' + extraLineHtml + '<strong>Назначение (Б): ' + o.to + '</strong>' + optionsHtml + paymentHtml + '<span style="color:#FF5C77; font-weight:600;">Телефон: ' + o.phone + '</span><div style="margin-top:8px;">' + actionHtml + '</div></div>';
             }
             driverBox.innerHTML = count > 0 ? html : '<p style="text-align:center; color:#FF5C77; margin-top:40px;">Активных заявок пока нет<br>(Водитель: ' + driverPhone + ')</p>';
         };
         refresh();
         pollTimer = setInterval(refresh, 3000);
     }
+    function formatSubLeft(expiresAt) {
+        if (!expiresAt) return "Подписка активна";
+        const diff = Math.max(0, Number(expiresAt) - Date.now());
+        if (diff === 0) return "Подписка истекла";
+        const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+        const hours = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+        const mins = Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000));
+        return days > 0 ? ("Подписка: " + days + " дн. " + hours + " ч.") : ("Подписка: " + hours + " ч. " + mins + " мин.");
+    }
+
+    function switchDriverTab(tab) {
+        driverTab = tab;
+        document.getElementById("tab-orders-btn").className = "btn " + (tab === "orders" ? "" : "btn-outline-coral");
+        document.getElementById("tab-chat-btn").className = "btn " + (tab === "chat" ? "" : "btn-outline-coral");
+        document.getElementById("driver-box").classList.toggle("hidden", tab !== "orders");
+        document.getElementById("driver-chat-box").classList.toggle("hidden", tab !== "chat");
+        document.getElementById("driver-chat-controls").classList.toggle("hidden", tab !== "chat");
+        if (tab === "chat") loadDriverChat();
+    }
+
+    document.getElementById("tab-orders-btn").addEventListener("click", () => switchDriverTab("orders"));
+    document.getElementById("tab-chat-btn").addEventListener("click", () => switchDriverTab("chat"));
+
+    async function loadDriverChat() {
+        if (!isDriver || driverTab !== "chat") return;
+        const box = document.getElementById("driver-chat-box");
+        const docs = await fsList("driver_chat");
+        const now = Date.now();
+        const msgs = [];
+        for (const d of docs) {
+            const ts = Number(d.createdAt || 0);
+            if (ts > 0 && now - ts > 24 * 60 * 60 * 1000) { fsDelete("driver_chat/" + d.id); continue; }
+            msgs.push(d);
+        }
+        msgs.sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0));
+        box.innerHTML = msgs.length ? "" : '<p style="text-align:center; color:#888; margin-top:30px;">Общий чат водителей пуст. Напишите коллегам первым!</p>';
+        msgs.forEach(m => {
+            const isMine = (m.sender || "") === driverPhone;
+            const label = isMine ? "Вы" : ("Водитель ••••" + (m.sender || "").slice(-4));
+            const div = document.createElement("div");
+            div.className = "msg " + (isMine ? "user" : "bot");
+            div.innerHTML = '<div style="font-size:11px; color:#FF5C77; font-weight:700; margin-bottom:2px;">' + label + '</div><div>' + (m.text || "") + '</div>';
+            box.appendChild(div);
+        });
+        box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendDriverChatMsg() {
+        const inp = document.getElementById("driver-chat-input");
+        const txt = inp.value.trim();
+        if (!txt) return;
+        inp.value = "";
+        await fsAdd("driver_chat", { sender: driverPhone, text: txt, createdAt: Date.now() });
+        loadDriverChat();
+    }
+
+    document.getElementById("driver-chat-send").addEventListener("click", sendDriverChatMsg);
+    document.getElementById("driver-chat-input").addEventListener("keypress", (e) => { if (e.key === "Enter") sendDriverChatMsg(); });
+
     async function createOffer(orderId) {
         const inp = document.getElementById("price-" + orderId);
         if (inp && inp.value.trim()) {
@@ -1131,7 +1227,6 @@
         localStorage.setItem("autopulse_rules_v1", "1");
         rulesModal.classList.add("hidden");
     });
-
     const pinModal = document.getElementById("pin-modal");
     const pinErr = document.getElementById("pin-error");
     let driverModalMode = "login";
@@ -1161,6 +1256,7 @@
             };
             grid.appendChild(btn);
         });
+
         const phone = document.getElementById("driver-phone-input").value.trim();
         const pinInp = document.getElementById("pin-input");
         const loginRow = document.getElementById("login-actions-row");
@@ -1230,7 +1326,7 @@
             stopTimers();
             document.getElementById("driver-badge").classList.add("hidden");
             document.getElementById("toggle-mode-btn").innerText = "Водитель";
-            document.getElementById("driver-box").classList.add("hidden");
+            ["driver-top-panel", "driver-box", "driver-chat-box", "driver-chat-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
             chatBox.classList.remove("hidden");
             if (currentOrderId && (step === 10 || step === 12)) startPassengerPolling();
             updateControls();
@@ -1276,7 +1372,7 @@
                     const expiresAt = Date.now() + 180 * 24 * 60 * 60 * 1000;
                     await fsAdd("drivers", { phone: phone, pin: pin, trialUsed: "yes", expiresAt: expiresAt });
                     localStorage.setItem("autopulse_trial_used_180_v1", "1");
-                    enterDriverMode(phone);
+                    enterDriverMode(phone, expiresAt);
                 }
             } else {
                 if (!existing || (existing.pin || "").trim() !== pin) {
@@ -1290,7 +1386,7 @@
                     pinErr.classList.remove("hidden");
                     renderDriverTariffs();
                 } else {
-                    enterDriverMode(phone);
+                    enterDriverMode(phone, existing.expiresAt || 0);
                 }
             }
         } catch (e) {
@@ -1302,7 +1398,7 @@
         }
     });
 
-    function enterDriverMode(phone) {
+    function enterDriverMode(phone, expiresAt) {
         localStorage.setItem("driver_phone", phone);
         driverPhone = phone;
         isDriver = true;
@@ -1313,8 +1409,11 @@
         chatBox.classList.add("hidden");
         hideSuggestions();
         document.getElementById("offers-container").classList.add("hidden");
-        ["extra-stop-choice", "trip-options-choice", "passenger-controls", "active-controls", "new-order-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
-        document.getElementById("driver-box").classList.remove("hidden");
+        ["extra-stop-choice", "trip-options-choice", "payment-method-choice", "passenger-controls", "active-controls", "new-order-controls"].forEach(id => document.getElementById(id).classList.add("hidden"));
+        document.getElementById("driver-top-panel").classList.remove("hidden");
+        document.getElementById("driver-phone-lbl").innerText = phone;
+        document.getElementById("driver-sub-left").innerText = formatSubLeft(expiresAt);
+        switchDriverTab("orders");
         startDriverPolling();
     }
 
@@ -1332,6 +1431,7 @@
             fromAddr = ord.from || "";
             toAddr = ord.to || "";
             extraStopAddr = ord.extraStop || "";
+            paymentMethod = ord.payment || "Наличные";
             userPhone = ord.phone || "";
             selectedDriverPhone = ord.driverPhone || "";
             orderStatus = ord.status || "searching";
@@ -1343,7 +1443,7 @@
                 addMsg("Ожидаем предложения от водителей...", false);
                 step = 10;
             } else {
-                if (ord.price) addMsg("Согласованная стоимость: " + ord.price + " ₽", false);
+                if (ord.price) addMsg("Согласованная стоимость: " + ord.price + " ₽ (" + paymentMethod + ")", false);
                 if (selectedDriverPhone) {
                     document.getElementById("call-driver-btn").href = "tel:" + sanitizePhone(selectedDriverPhone);
                 }
