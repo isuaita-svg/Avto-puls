@@ -29,7 +29,6 @@ input{flex:1;background:#220810;border:1.2px solid rgba(255,30,66,.55);border-ra
 .btn-red-bright{background:#FF0A37;border-color:#FF0A37}
 .btn-outline-red{background:#220810;border:1.5px solid #FF1E42;color:#fff}
 .btn-outline-coral{background:#220810;border:1.5px solid #FF5C77;color:#fff}
-.status-pill{font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;white-space:nowrap}
 .hidden{display:none!important}
 .modal{position:fixed;inset:0;background:rgba(12,3,6,.92);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
 .modal-content{background:#17050A;border:1.5px solid #FF1E42;padding:18px;border-radius:20px;width:100%;max-width:390px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
@@ -39,27 +38,18 @@ input{flex:1;background:#220810;border:1.2px solid rgba(255,30,66,.55);border-ra
 </head>
 <body>
 <header>
-  <div style="display:flex;align-items:center;gap:8px">
-    <h1>Авто<span>Пульс</span></h1>
-    <span id="driver-badge" class="badge-driver hidden">АВТО</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:8px">
-    <button type="button" class="link-btn" id="open-rules-btn">Правила</button>
-    <button type="button" class="btn btn-outline-red" style="padding:7px 12px;font-size:13px" id="toggle-mode-btn">Водитель</button>
-  </div>
+  <div style="display:flex;align-items:center;gap:8px"><h1>Авто<span>Пульс</span></h1><span id="driver-badge" class="badge-driver hidden">АВТО</span></div>
+  <div style="display:flex;align-items:center;gap:8px"><button type="button" class="link-btn" id="open-rules-btn">Правила</button><button type="button" class="btn btn-outline-red" style="padding:7px 12px;font-size:13px" id="toggle-mode-btn">Водитель</button></div>
 </header>
 <svg class="speed-bar" viewBox="0 0 360 8" preserveAspectRatio="none"><line x1="0" y1="3" x2="360" y2="3" stroke="#FF1E42" stroke-width="2.5"/></svg>
 <div id="chat-box"></div>
 <div id="offers-container" class="hidden"><span style="font-size:14px;color:#FF5C77;font-weight:700">Предложения от водителей:</span><div id="offers-list" style="display:flex;flex-direction:column;gap:8px"></div></div>
-<div id="extra-stop-choice" class="bottom-bar hidden">
-  <button type="button" class="btn" id="no-extra-btn" style="flex:1">Нет, сразу в точку Б</button>
-  <button type="button" class="btn btn-outline-coral" id="add-extra-btn" style="flex:1">Добавить адрес</button>
-</div>
+<div id="extra-stop-choice" class="bottom-bar hidden"><button type="button" class="btn" id="no-extra-btn" style="flex:1">Нет, сразу в точку Б</button><button type="button" class="btn btn-outline-coral" id="add-extra-btn" style="flex:1">Добавить адрес</button></div>
 <div id="trip-options-choice" class="bottom-bar hidden" style="flex-direction:column;gap:8px">
   <div style="display:flex;gap:8px;width:100%">
-    <button type="button" class="btn btn-outline-red" id="opt-seat-btn" style="flex:1;padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4l2 12h9l1.5 4"/><circle cx="12.5" cy="7" r="2.2"/></svg><span style="font-size:12px">Кресло</span></button>
-    <button type="button" class="btn btn-outline-red" id="opt-bag-btn" style="flex:1;padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M9 7V4h6v3"/></svg><span style="font-size:12px">Багаж</span></button>
-    <button type="button" class="btn btn-outline-red" id="opt-pet-btn" style="flex:1;padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="16" r="3.5"/><circle cx="7" cy="10" r="1.5"/><circle cx="12" cy="7" r="1.5"/><circle cx="17" cy="10" r="1.5"/></svg><span style="font-size:12px">Животные</span></button>
+    <button type="button" class="btn btn-outline-red" id="opt-seat-btn" style="flex:1;padding:8px">Кресло</button>
+    <button type="button" class="btn btn-outline-red" id="opt-bag-btn" style="flex:1;padding:8px">Багаж</button>
+    <button type="button" class="btn btn-outline-red" id="opt-pet-btn" style="flex:1;padding:8px">Животные</button>
   </div>
   <button type="button" class="btn btn-green" id="confirm-options-btn" style="width:100%">Без доп. опций -> Оплата</button>
 </div>
@@ -69,10 +59,7 @@ input{flex:1;background:#220810;border:1.2px solid rgba(255,30,66,.55);border-ra
   <button type="button" class="btn btn-outline-coral" style="flex:1" onclick="choosePayment('Сбер')">Сбер</button>
 </div>
 <div id="address-suggestions" class="hidden" style="background:#17050A;border-top:1px solid rgba(255,30,66,.45);padding:8px 12px;display:flex;flex-direction:column;gap:6px;max-height:30vh;overflow-y:auto"></div>
-<div id="passenger-controls" class="bottom-bar">
-  <input type="text" id="chat-input" placeholder="Откуда забрать (точка А)...">
-  <button type="button" class="btn" id="send-btn">Отпр.</button>
-</div>
+<div id="passenger-controls" class="bottom-bar"><input type="text" id="chat-input" placeholder="Откуда забрать (точка А)..."><button type="button" class="btn" id="send-btn">Отпр.</button></div>
 <div id="active-controls" class="bottom-bar hidden" style="flex-direction:column">
   <div id="driver-track-card" class="hidden" style="background:#220810;border:1.2px solid #FF5C77;border-radius:14px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
     <div><div style="color:#FF5C77;font-weight:700;font-size:14px">Водитель в пути</div><div id="driver-dist-text" style="font-size:13px">Определяем координаты...</div></div>
@@ -124,26 +111,24 @@ input{flex:1;background:#220810;border:1.2px solid rgba(255,30,66,.55);border-ra
   <div style="display:flex;gap:8px"><button type="button" class="btn btn-outline-red" id="close-pin-btn" style="flex:1">Закрыть</button><button type="button" class="btn" id="confirm-pin-btn" style="flex:1">Войти</button></div>
 </div></div>
 <script>
-const FS_PROJECT="vodniyuhta",FS_API_KEY="AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
-const PAY_WORKER_URL="https://pay."+"avtopulse-uhta.ru"+"/pay";
+const DOMAIN_BASE="https://pay."+"avtopulse-uhta.ru";
+const PAY_WORKER_URL=DOMAIN_BASE+"/pay";
+const FS_PROXY=DOMAIN_BASE+"/fs";
 const DRIVER_PLANS=[{days:180,price:0,label:"180 дней • Бесплатно"},{days:1,price:300,label:"1 день • 300 ₽"},{days:3,price:800,label:"3 дня • 800 ₽"},{days:7,price:1700,label:"7 дней • 1700 ₽"},{days:30,price:2700,label:"30 дней • 2700 ₽"}];
 (()=>{const c=document.createElement("link");c.rel="stylesheet";c.href="https://unpkg.com";document.head.appendChild(c);const s=document.createElement("script");s.src="https://unpkg.com";document.head.appendChild(s)})();
 const $=id=>document.getElementById(id);
-const fsUrl=p=>`https://googleapis.com{FS_PROJECT}/databases/(default)/documents/${p}${p.includes("?")?"&":"?"}key=${FS_API_KEY}`;
 const toFs=o=>{const f={};for(const[k,v]of Object.entries(o))f[k]=typeof v==="number"?{integerValue:String(Math.trunc(v))}:{stringValue:String(v??"")};return f};
 const fromFs=d=>{if(!d||!d.fields)return null;const o={id:d.name?d.name.split("/").pop():""};for(const[k,v]of Object.entries(d.fields))o[k]="stringValue"in v?v.stringValue:Number(v.integerValue||v.doubleValue||0);return o};
-const fsAdd=async(c,d)=>{const r=await fetch(fsUrl(c),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})});return r.ok?(await r.json()).name.split("/").pop():null};
-const fsGet=async p=>{const r=await fetch(fsUrl(p));return r.ok?fromFs(await r.json()):null};
-const fsList=async c=>{const r=await fetch(fsUrl(`${c}?pageSize=100`));return r.ok?((await r.json()).documents||[]).map(fromFs).filter(Boolean):[]};
-const fsPatch=async(p,d)=>{const m=Object.keys(d).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join("&");await fetch(fsUrl(`${p}?${m}`),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})})};
-const fsDelete=async p=>{await fetch(fsUrl(p),{method:"DELETE"})};
-let lastPos=null;
+const fsAdd=async(c,d)=>{const r=await fetch(`${FS_PROXY}?path=${encodeURIComponent(c)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})});return r.ok?(await r.json()).name.split("/").pop():null};
+const fsGet=async p=>{const r=await fetch(`${FS_PROXY}?path=${encodeURIComponent(p)}`);return r.ok?fromFs(await r.json()):null};
+const fsList=async c=>{const r=await fetch(`${FS_PROXY}?path=${encodeURIComponent(c)}&pageSize=100`);return r.ok?((await r.json()).documents||[]).map(fromFs).filter(Boolean):[]};
+const fsPatch=async(p,d)=>{const m=Object.keys(d).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join("&");await fetch(`${FS_PROXY}?path=${encodeURIComponent(p)}&mask=${encodeURIComponent(m)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})})};
+const fsDelete=async p=>{await fetch(`${FS_PROXY}?path=${encodeURIComponent(p)}`,{method:"DELETE"})};
+let lastPos=null,mapInstance=null;
 const updatePos=()=>{if(navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{lastPos={lat:p.coords.latitude,lon:p.coords.longitude}},()=>{},{enableHighAccuracy:true,timeout:5000})};
 updatePos();setInterval(updatePos,6000);
-function distMeters(lat1,lon1,lat2,lon2){const R=6371000,p1=lat1*Math.PI/180,p2=lat2*Math.PI/180,dp=(lat2-lat1)*Math.PI/180,dl=(lon2-lon1)*Math.PI/180,a=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)))}
 function normAddr(raw){const s=(raw||"").trim();if(!s)return"";const l=s.toLowerCase();return["ухта","водный","ярега","шудаяг","седью","боровой","коми"].some(k=>l.includes(k))?s:`Ухта, ${s}`}
 async function geocode(q){try{const r=await fetch(`https://openstreetmap.org{encodeURIComponent(normAddr(q))}`);const d=await r.json();return d.at(0)?{lat:parseFloat(d.at(0).lat),lon:parseFloat(d.at(0).lon)}:null}catch{return null}}
-let mapInstance=null;
 async function openInAppMap(title,fromStr,extraStr,toStr,status,dLat,dLon){
   $("map-modal-title").textContent=title;$("map-modal").classList.remove("hidden");$("map-route-info").textContent="Строим 3D-маршрут...";$("ext-nav-btn").classList.add("hidden");
   if(!window.maplibregl){$("map-route-info").textContent="Загрузка карты...";return}
@@ -163,16 +148,7 @@ async function openInAppMap(title,fromStr,extraStr,toStr,status,dLat,dLon){
   if(target){$("ext-nav-btn").textContent=navLabel;$("ext-nav-btn").href=`https://yandex.ru{target.lat},${target.lon}&rtt=auto`;$("ext-nav-btn").classList.remove("hidden")}
   mapInstance.on("load",async()=>{
     if(pts.length>=2){
-      try{
-        const coords=pts.map(p=>`${p.lon},${p.lat}`).join(";");
-        const r=await fetch(`https://project-osrm.org{coords}?overview=full&geometries=geojson`);
-        const j=await r.json();const rt=j.routes&&j.routes.at(0);
-        if(rt){
-          mapInstance.addSource("rt",{type:"geojson",data:{type:"Feature",geometry:rt.geometry}});
-          mapInstance.addLayer({id:"rt-line",type:"line",source:"rt",paint:{"line-color":"#FF1E42","line-width":6}});
-          $("map-route-info").textContent=`Дистанция: ${(rt.distance/1000).toFixed(1)} км • ~${Math.max(1,Math.round(rt.duration/60))} мин`;
-        }
-      }catch{$("map-route-info").textContent="Маршрут построен"}
+      try{const coords=pts.map(p=>`${p.lon},${p.lat}`).join(";");const r=await fetch(`https://project-osrm.org{coords}?overview=full&geometries=geojson`);const j=await r.json();const rt=j.routes&&j.routes.at(0);if(rt){mapInstance.addSource("rt",{type:"geojson",data:{type:"Feature",geometry:rt.geometry}});mapInstance.addLayer({id:"rt-line",type:"line",source:"rt",paint:{"line-color":"#FF1E42","line-width":6}});$("map-route-info").textContent=`Дистанция: ${(rt.distance/1000).toFixed(1)} км • ~${Math.max(1,Math.round(rt.duration/60))} мин`}}catch{$("map-route-info").textContent="Маршрут построен"}
     }else $("map-route-info").textContent="Точка отмечена на карте";
   });
 }
@@ -202,23 +178,9 @@ $("send-btn").onclick=async()=>{
   else if(step===3){extraAddr=v;$("passenger-controls").classList.add("hidden");$("trip-options-choice").classList.remove("hidden");addMsg("Выберите доп. опции:");step=5}
   else if(step===4){
     userPhone=v;step=10;$("passenger-controls").classList.add("hidden");$("active-controls").classList.remove("hidden");
-    try{
-      const payload={from:fromAddr,to:toAddr,extraStop:extraAddr,options:syncOpts(),payment:payMethod,phone:userPhone,driverPhone:"",price:"",status:"searching",createdAt:Date.now(),arrivedAt:0,clientComing:"",driverLat:"",driverLon:"",clientLat:lastPos?String(lastPos.lat):"",clientLon:lastPos?String(lastPos.lon):""};
-      const res=await fetch(`https://googleapis.com{FS_API_KEY}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(payload)})});
-      const json=await res.json();
-      if(res.ok&&json.name){
-        curOrderId=json.name.split("/").pop();
-        localStorage.setItem("autopulse_active_order_id",curOrderId);
-        addMsg("Заявка отправлена! Ожидаем предложения водителей...");
-        startPoll();
-      }else{
-        addMsg("Ошибка базы: "+(json.error?json.error.message:res.status));
-      }
-    }catch(e){
-      addMsg("Ошибка сети: "+e.message);
-    }
+    const id=await fsAdd("orders",{from:fromAddr,to:toAddr,extraStop:extraAddr,options:syncOpts(),payment:payMethod,phone:userPhone,driverPhone:"",price:"",status:"searching",createdAt:Date.now(),arrivedAt:0,clientComing:"",driverLat:"",driverLon:"",clientLat:lastPos?String(lastPos.lat):"",clientLon:lastPos?String(lastPos.lon):""});
+    if(id){curOrderId=id;localStorage.setItem("autopulse_active_order_id",id);addMsg("Заявка отправлена! Ожидаем предложения водителей...");startPoll()}else addMsg("Ошибка сети.")
   }
-
 };
 function startPoll(){
   if(pollTimer)clearInterval(pollTimer);
