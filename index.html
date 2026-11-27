@@ -202,9 +202,23 @@ $("send-btn").onclick=async()=>{
   else if(step===3){extraAddr=v;$("passenger-controls").classList.add("hidden");$("trip-options-choice").classList.remove("hidden");addMsg("Выберите доп. опции:");step=5}
   else if(step===4){
     userPhone=v;step=10;$("passenger-controls").classList.add("hidden");$("active-controls").classList.remove("hidden");
-    const id=await fsAdd("orders",{from:fromAddr,to:toAddr,extraStop:extraAddr,options:syncOpts(),payment:payMethod,phone:userPhone,driverPhone:"",price:"",status:"searching",createdAt:Date.now(),arrivedAt:0,clientComing:"",driverLat:"",driverLon:"",clientLat:lastPos?String(lastPos.lat):"",clientLon:lastPos?String(lastPos.lon):""});
-    if(id){curOrderId=id;localStorage.setItem("autopulse_active_order_id",id);addMsg("Заявка отправлена! Ожидаем предложения водителей...");startPoll()}else addMsg("Ошибка сети.")
+    try{
+      const payload={from:fromAddr,to:toAddr,extraStop:extraAddr,options:syncOpts(),payment:payMethod,phone:userPhone,driverPhone:"",price:"",status:"searching",createdAt:Date.now(),arrivedAt:0,clientComing:"",driverLat:"",driverLon:"",clientLat:lastPos?String(lastPos.lat):"",clientLon:lastPos?String(lastPos.lon):""};
+      const res=await fetch(`https://googleapis.com{FS_API_KEY}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(payload)})});
+      const json=await res.json();
+      if(res.ok&&json.name){
+        curOrderId=json.name.split("/").pop();
+        localStorage.setItem("autopulse_active_order_id",curOrderId);
+        addMsg("Заявка отправлена! Ожидаем предложения водителей...");
+        startPoll();
+      }else{
+        addMsg("Ошибка базы: "+(json.error?json.error.message:res.status));
+      }
+    }catch(e){
+      addMsg("Ошибка сети: "+e.message);
+    }
   }
+
 };
 function startPoll(){
   if(pollTimer)clearInterval(pollTimer);
