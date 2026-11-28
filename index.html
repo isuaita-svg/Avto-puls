@@ -396,31 +396,35 @@ $("confirm-pin-btn").onclick=async()=>{
   if(ph.length<11||pin.length!==4){err.textContent="Введите корректный телефон и 4-значный PIN";err.classList.remove("hidden");return}
   btn.disabled=true;btn.textContent="Проверка...";
   try{
-    const drv=await fsGet(`drivers/${ph}`);
+    const list=await fsList("drivers");
+    const drv=list.find(d=>normPhone(d.phone)===ph);
+    const expVal=drv?Number(drv.expiresAt||drv.expires_at||0):0;
+    const trialUsed=drv&&(drv.trialUsed==="yes"||drv.trial_used==="1");
     if(!selPlan){
-      if(!drv){err.textContent="Номер не зарегистрирован. Нажмите выше «Получить PIN бесплатно на 180 дней» или выберите тариф.";err.classList.remove("hidden");return}
-      if(drv.pin!==pin){err.textContent="Неверный PIN-код";err.classList.remove("hidden");return}
-      if(Number(drv.expires_at||0)<Date.now()){err.textContent="Срок подписки истёк. Выберите тариф для продления.";err.classList.remove("hidden");return}
-      drvPhone=ph;drvExp=Number(drv.expires_at);localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
+      if(!drv){err.textContent="Номер не зарегистрирован. Нажмите «Получить PIN бесплатно на 180 дней» или выберите тариф.";err.classList.remove("hidden");return}
+      if(String(drv.pin)!==pin){err.textContent="Неверный PIN-код";err.classList.remove("hidden");return}
+      if(expVal<Date.now()){err.textContent="Срок подписки истёк. Выберите тариф для продления.";err.classList.remove("hidden");return}
+      drvPhone=ph;drvExp=expVal;localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
       $("pin-modal").classList.add("hidden");enterDriverMode();
     }else if(selPlan.priceRub===0){
-      if(drv&&drv.trial_used==="1"){err.textContent="Бесплатный период уже использован. Войдите по своему PIN или выберите тариф.";err.classList.remove("hidden");return}
+      if(trialUsed){err.textContent="Бесплатный период уже использован. Войдите по своему PIN или выберите тариф.";err.classList.remove("hidden");return}
       const exp=Date.now()+selPlan.days*86400000;
-      await fsPatch(`drivers/${ph}`,{phone:ph,pin:pin,expires_at:exp,trial_used:"1"});
+      if(drv){await fsPatch(`drivers/${drv.id}`,{phone:ph,pin:pin,expiresAt:exp,trialUsed:"yes"})}
+      else{await fsAdd("drivers",{phone:ph,pin:pin,expiresAt:exp,trialUsed:"yes"})}
       drvPhone=ph;drvExp=exp;localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
       $("pin-modal").classList.add("hidden");enterDriverMode();
     }else{
-      const r=await fetch(PAY_WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:ph,pin:pin,days:selPlan.days,amount:selPlan.priceRub})});
-      const j=await r.json();if(j.url){location.href=j.url;return}
-      err.textContent=j.error||"Ошибка создания платежа";err.classList.remove("hidden");
+      const pUrl=`${PAY_WORKER_URL}?phone=${encodeURIComponent(ph)}&days=${selPlan.days}&sum=${selPlan.priceRub}`;
+      location.href=pUrl;
     }
   }catch(e){
-    err.textContent="Ошибка связи с базой данных. Проверьте интернет или доступ к Firebase.";
+    err.textContent="Ошибка связи с сервером. Проверьте интернет или статус Worker.";
     err.classList.remove("hidden");
   }finally{
     btn.disabled=false;btn.textContent="Войти";
   }
 };
+
 const startGeoShare=oid=>{
   if(geoWatchId||!navigator.geolocation)return;
   geoWatchId=navigator.geolocation.watchPosition(p=>{
