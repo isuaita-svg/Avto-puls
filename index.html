@@ -26,7 +26,6 @@ input{flex:1;background:#220810;border:1.2px solid rgba(255,30,66,.55);border-ra
 .btn:disabled{background:#241016;border-color:#444;color:#777}
 .btn-coral{background:#FF5C77;border-color:#FF5C77}
 .btn-green{background:#10B981;color:#000;border-color:#10B981}
-.btn-red-bright{background:#FF0A37;border-color:#FF0A37}
 .btn-outline-red{background:#220810;border:1.5px solid #FF1E42;color:#fff}
 .btn-outline-coral{background:#220810;border:1.5px solid #FF5C77;color:#fff}
 .hidden{display:none!important}
@@ -164,9 +163,22 @@ const fsDelete=async p=>{
 let isDriver=false,driverTab="orders",step="from",order={},curOrderId=localStorage.getItem("ap_oid")||"",selPlan=null;
 let drvPhone=localStorage.getItem("ap_dphone")||"",drvExp=Number(localStorage.getItem("ap_dexp")||0);
 let selOpts={seat:false,bag:false,pet:false},pollTmr=null,waitTmr=null,geoWatchId=null,mapInst=null;
-const normPhone=p=>{let d=String(p||"").replace(/\D/g,"");if(d.length===11&&d[0]==="8")d="7"+d.slice(1);if(d.length===10)d="7"+d;return d};
-const addMsg=(txt,who="bot")=>{const d=document.createElement("div");d.className=`msg ${who}`;d.textContent=txt;$("chat-box").appendChild(d);$("chat-box").scrollTop=$("chat-box").scrollHeight};
-const hideInputs=()=>{["passenger-controls","extra-stop-choice","trip-options-choice","payment-method-choice","address-suggestions"].forEach(id=>$(id).classList.add("hidden"))};
+const normPhone=p=>{
+  let d=String(p||"").replace(/\D/g,"");
+  if(d.length===11&&d[0]==="8")d="7"+d.slice(1);
+  if(d.length===10)d="7"+d;
+  return d;
+};
+const addMsg=(txt,who="bot")=>{
+  const d=document.createElement("div");
+  d.className=`msg ${who}`;
+  d.textContent=txt;
+  $("chat-box").appendChild(d);
+  $("chat-box").scrollTop=$("chat-box").scrollHeight;
+};
+const hideInputs=()=>{
+  ["passenger-controls","extra-stop-choice","trip-options-choice","payment-method-choice","address-suggestions"].forEach(id=>$(id).classList.add("hidden"));
+};
 const geocodeUkhta=async q=>{
   try{
     const r=await fetch(`https://openstreetmap.org{encodeURIComponent("Ухта, "+q)}`);
@@ -184,8 +196,16 @@ $("chat-input").oninput=()=>{
     if(!list.length){box.classList.add("hidden");return}
     list.forEach(item=>{
       const name=item.display_name.split(",").slice(0,2).join(", ");
-      const b=document.createElement("button");b.type="button";b.className="btn btn-outline-red";b.style.textAlign="left";b.style.padding="8px 10px";b.style.fontSize="13px";b.textContent=name;
-      b.onclick=()=>{$("chat-input").value=name;order[step+"_lat"]=Number(item.lat);order[step+"_lon"]=Number(item.lon);box.classList.add("hidden")};
+      const b=document.createElement("button");
+      b.type="button";b.className="btn btn-outline-red";
+      b.style.cssText="text-align:left;padding:8px 10px;font-size:13px";
+      b.textContent=name;
+      b.onclick=()=>{
+        $("chat-input").value=name;
+        order[step+"_lat"]=Number(item.lat);
+        order[step+"_lon"]=Number(item.lon);
+        box.classList.add("hidden");
+      };
       box.appendChild(b);
     });
     box.classList.remove("hidden");
@@ -196,16 +216,17 @@ const handleStep=async()=>{
   $("chat-input").value="";$("address-suggestions").classList.add("hidden");addMsg(v,"user");
   if(step==="from"){
     order.from=v;
-    if(!order.from_lat){const g=await geocodeUkhta(v);if(g[0]){order.from_lat=Number(g[0].lat);order.from_lon=Number(g[0].lon)}}
+    if(!order.from_lat){const g=await geocodeUkhta(v);if(g.length){order.from_lat=Number(g[0].lat);order.from_lon=Number(g[0].lon)}}
     step="to";$("chat-input").placeholder="Куда поедем (точка Б)...";addMsg("Куда поедем? Укажите точку Б:");
   }else if(step==="to"){
     order.to=v;
-    if(!order.to_lat){const g=await geocodeUkhta(v);if(g[0]){order.to_lat=Number(g[0].lat);order.to_lon=Number(g[0].lon)}}
+    if(!order.to_lat){const g=await geocodeUkhta(v);if(g.length){order.to_lat=Number(g[0].lat);order.to_lon=Number(g[0].lon)}}
     step="ask_extra";hideInputs();$("extra-stop-choice").classList.remove("hidden");addMsg("Нужен ли заезд по пути?");
   }else if(step==="extra"){
     order.extra=v;step="options";hideInputs();$("trip-options-choice").classList.remove("hidden");addMsg("Выберите доп. опции при необходимости:");
   }else if(step==="price"){
-    const pr=parseInt(v.replace(/\D/g,""),10);if(!pr||pr<50){addMsg("Укажите корректную сумму в рублях (от 50 ₽):");return}
+    const pr=parseInt(v.replace(/\D/g,""),10);
+    if(!pr||pr<50){addMsg("Укажите корректную сумму в рублях (от 50 ₽):");return}
     order.price=pr;order.status="open";order.created=Date.now();
     hideInputs();addMsg("Публикуем заявку водителям...");
     const id=await fsAdd("orders",order);
@@ -232,6 +253,7 @@ window.choosePayment=m=>{order.payment=m;step="price";hideInputs();$("passenger-
 const resetPassenger=()=>{
   clearInterval(pollTmr);clearInterval(waitTmr);localStorage.removeItem("ap_oid");curOrderId="";order={};step="from";selOpts={seat:false,bag:false,pet:false};
   ["offers-container","active-controls","new-order-controls","driver-track-card","arrived-card","intransit-card","call-driver-btn"].forEach(id=>$(id).classList.add("hidden"));
+  $("coming-out-btn").classList.remove("hidden");$("coming-out-ack").classList.add("hidden");
   $("passenger-controls").classList.remove("hidden");$("chat-input").placeholder="Откуда забрать (точка А)...";$("chat-box").innerHTML="";
   addMsg("Добро пожаловать в АвтоПульс • Ухта! Укажите адрес подачи (точка А):");
 };
