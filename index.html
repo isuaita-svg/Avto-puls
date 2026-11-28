@@ -1281,7 +1281,13 @@
             backBtn.classList.remove("hidden");
             const payBtn = document.getElementById("robokassa-pay-btn");
             payBtn.innerText = "Оплатить " + selectedPlan.price + " ₽ (" + selectedPlan.label + ")";
-            payBtn.href = PAY_WORKER_URL + "?phone=" + encodeURIComponent(phone) + "&days=" + selectedPlan.days + "&sum=" + selectedPlan.price;
+           const updatePayLink = () => {
+    const p = document.getElementById("driver-phone-input").value.trim();
+    payBtn.href = PAY_WORKER_URL + "?phone=" + encodeURIComponent(p) + "&days=" + selectedPlan.days + "&sum=" + selectedPlan.price;
+};
+updatePayLink();
+document.getElementById("driver-phone-input").oninput = updatePayLink;
+ 
         } else {
             document.getElementById("pin-modal-title").innerText = "ВХОД ДЛЯ ВОДИТЕЛЯ";
             document.getElementById("pin-modal-desc").innerText = "Войдите по PIN или выберите тариф ниже:";
