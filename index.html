@@ -375,29 +375,37 @@ const renderPlans=()=>{
 $("trial-plan-btn").onclick=()=>{selPlan=DRIVER_PLANS.at(0);$("pin-modal-desc").textContent="Бесплатный доступ на 180 дней. Введите телефон и придумайте PIN (4 цифры):";$("back-to-login-btn").classList.remove("hidden")};
 $("back-to-login-btn").onclick=()=>{selPlan=null;$("pin-modal-desc").textContent="Войдите по PIN или выберите тариф:";$("back-to-login-btn").classList.add("hidden")};
 $("confirm-pin-btn").onclick=async()=>{
-  const ph=normPhone($("driver-phone-input").value),pin=$("pin-input").value.trim(),err=$("pin-error");
+  const btn=$("confirm-pin-btn"),ph=normPhone($("driver-phone-input").value),pin=$("pin-input").value.trim(),err=$("pin-error");
   err.classList.add("hidden");
   if(ph.length<11||pin.length!==4){err.textContent="Введите корректный телефон и 4-значный PIN";err.classList.remove("hidden");return}
-  const drv=await fsGet(`drivers/${ph}`);
-  if(!selPlan){
-    if(!drv||drv.pin!==pin){err.textContent="Неверный телефон или PIN. Выберите тариф ниже для регистрации.";err.classList.remove("hidden");return}
-    if(Number(drv.expires_at||0)<Date.now()){err.textContent="Срок подписки истёк. Выберите тариф для продления.";err.classList.remove("hidden");return}
-    drvPhone=ph;drvExp=Number(drv.expires_at);localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
-    $("pin-modal").classList.add("hidden");enterDriverMode();
-  }else if(selPlan.priceRub===0){
-    if(drv&&drv.trial_used==="1"){err.textContent="Бесплатный период уже использован для этого номера.";err.classList.remove("hidden");return}
-    const exp=Date.now()+selPlan.days*86400000;
-    await fsPatch(`drivers/${ph}`,{phone:ph,pin:pin,expires_at:exp,trial_used:"1"});
-    drvPhone=ph;drvExp=exp;localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
-    $("pin-modal").classList.add("hidden");enterDriverMode();
-  }else{
-    try{
+  btn.disabled=true;btn.textContent="Проверка...";
+  try{
+    const drv=await fsGet(`drivers/${ph}`);
+    if(!selPlan){
+      if(!drv){err.textContent="Номер не зарегистрирован. Нажмите выше «Получить PIN бесплатно на 180 дней» или выберите тариф.";err.classList.remove("hidden");return}
+      if(drv.pin!==pin){err.textContent="Неверный PIN-код";err.classList.remove("hidden");return}
+      if(Number(drv.expires_at||0)<Date.now()){err.textContent="Срок подписки истёк. Выберите тариф для продления.";err.classList.remove("hidden");return}
+      drvPhone=ph;drvExp=Number(drv.expires_at);localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
+      $("pin-modal").classList.add("hidden");enterDriverMode();
+    }else if(selPlan.priceRub===0){
+      if(drv&&drv.trial_used==="1"){err.textContent="Бесплатный период уже использован. Войдите по своему PIN или выберите тариф.";err.classList.remove("hidden");return}
+      const exp=Date.now()+selPlan.days*86400000;
+      await fsPatch(`drivers/${ph}`,{phone:ph,pin:pin,expires_at:exp,trial_used:"1"});
+      drvPhone=ph;drvExp=exp;localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
+      $("pin-modal").classList.add("hidden");enterDriverMode();
+    }else{
       const r=await fetch(PAY_WORKER_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:ph,pin:pin,days:selPlan.days,amount:selPlan.priceRub})});
       const j=await r.json();if(j.url){location.href=j.url;return}
       err.textContent=j.error||"Ошибка создания платежа";err.classList.remove("hidden");
-    }catch(e){err.textContent="Нет связи с платёжным шлюзом";err.classList.remove("hidden")}
+    }
+  }catch(e){
+    err.textContent="Ошибка связи с сервером (pay.avtopulse-uhta.ru). Проверьте работу Worker или интернет.";
+    err.classList.remove("hidden");
+  }finally{
+    btn.disabled=false;btn.textContent="Войти";
   }
 };
+
 const startGeoShare=oid=>{
   if(geoWatchId||!navigator.geolocation)return;
   geoWatchId=navigator.geolocation.watchPosition(p=>{
