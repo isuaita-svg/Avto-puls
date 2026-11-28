@@ -34,7 +34,7 @@ input{flex:1;background:var(--card);border:1.2px solid rgba(255,30,66,.55);borde
 .modal{position:fixed;inset:0;background:rgba(12,3,6,.92);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
 .modal-content{background:var(--surf);border:1.5px solid var(--red);padding:18px;border-radius:20px;width:100%;max-width:390px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
 .plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-#inapp-map{width:100%;height:330px;border-radius:14px;border:1.2px solid var(--red);background:var(--bg);overflow:hidden}
+#inapp-map{width:100%;height:330px;min-height:330px;border-radius:14px;border:1.2px solid var(--red);background:#12060A;position:relative;overflow:hidden}
 </style>
 </head>
 <body>
@@ -64,7 +64,7 @@ input{flex:1;background:var(--card);border:1.2px solid rgba(255,30,66,.55);borde
 <div id="active-controls" class="bottom-bar hidden" style="flex-direction:column">
   <div id="driver-track-card" class="hidden" style="background:#220810;border:1.2px solid #FF5C77;border-radius:14px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
     <div><div style="color:#FF5C77;font-weight:700;font-size:14px">Водитель в пути</div><div id="driver-dist-text" style="font-size:13px">Определяем координаты...</div></div>
-    <button type="button" id="map-driver-btn" class="btn hidden" style="padding:8px 12px;font-size:13px">На карте</button>
+    <button type="button" id="map-driver-btn" class="btn" style="padding:8px 12px;font-size:13px">На карте</button>
   </div>
   <div id="arrived-card" class="hidden" style="background:#220810;border:1.5px solid #10B981;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px">
     <div style="color:#10B981;font-weight:800;font-size:16px">Водитель на месте!</div>
@@ -91,7 +91,7 @@ input{flex:1;background:var(--card);border:1.2px solid rgba(255,30,66,.55);borde
   <h3 id="map-modal-title" style="color:#FF5C77;font-size:16px">3D-Навигация АвтоПульс</h3>
   <div id="inapp-map"></div>
   <div id="map-route-info" style="font-size:13px;text-align:center;background:#220810;padding:8px;border-radius:10px;border:1px solid #FF1E42">Строим маршрут...</div>
-  <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-coral hidden" style="width:100%">Открыть во внешнем навигаторе</a>
+  <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-coral" style="width:100%">Открыть в Яндекс.Навигаторе</a>
   <button type="button" class="btn" id="close-map-btn" style="width:100%">Закрыть карту</button>
 </div></div>
 <div id="rules-modal" class="modal hidden"><div class="modal-content">
@@ -115,8 +115,6 @@ input{flex:1;background:var(--card);border:1.2px solid rgba(255,30,66,.55);borde
 const DOMAIN_BASE="https://pay."+"avtopulse-uhta.ru";
 const PAY_WORKER_URL=DOMAIN_BASE+"/pay";
 const FS_PROXY=DOMAIN_BASE+"/fs";
-const FS_API_KEY="AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
-const FS_DIRECT="https://firestore."+"://googleapis.com";
 const DRIVER_PLANS=[
   {days:180,priceRub:0,label:"180 дней • Бесплатно"},
   {days:1,priceRub:300,label:"1 день • 300 ₽"},
@@ -125,11 +123,20 @@ const DRIVER_PLANS=[
   {days:30,priceRub:2700,label:"30 дней • 2700 ₽"}
 ];
 const $=id=>document.getElementById(id);
-(()=>{
-  const uBase="https://unpkg."+"com/maplibre-gl@3.6.2/dist/";
-  const c=document.createElement("link");c.rel="stylesheet";c.href=uBase+"maplibre-gl.css";document.head.appendChild(c);
-  const s=document.createElement("script");s.src=uBase+"maplibre-gl.js";document.head.appendChild(s);
-})();
+let mapLibReady=null;
+const ensureMapLib=()=>{
+  if(window.maplibregl)return Promise.resolve(true);
+  if(mapLibReady)return mapLibReady;
+  mapLibReady=new Promise(resolve=>{
+    const uBase="https://unpkg."+"com/maplibre-gl@3.6.2/dist/";
+    const c=document.createElement("link");c.rel="stylesheet";c.href=uBase+"maplibre-gl.css";document.head.appendChild(c);
+    const s=document.createElement("script");s.src=uBase+"maplibre-gl.js";
+    s.onload=()=>resolve(true);s.onerror=()=>resolve(false);
+    document.head.appendChild(s);
+  });
+  return mapLibReady;
+};
+ensureMapLib();
 const toFs=o=>{
   const f={};
   for(const[k,v]of Object.entries(o))f[k]=typeof v==="number"?{integerValue:String(Math.trunc(v))}:{stringValue:String(v??"")};
@@ -142,17 +149,11 @@ const fromFs=d=>{
   return o;
 };
 const fsCall=async(path,opts={},extra="")=>{
-  const directUrl=`${FS_DIRECT}/${path}?key=${FS_API_KEY}${extra}`;
-  try{
-    const r=await fetch(directUrl,opts);
-    if(r.status===404)return{notFound:true};
-    if(r.ok)return{ok:true,data:await r.json()};
-  }catch(_){}
   const proxyUrl=`${FS_PROXY}?path=${encodeURIComponent(path)}${extra.replace("?","&")}`;
-  const r2=await fetch(proxyUrl,opts);
-  if(r2.status===404)return{notFound:true};
-  if(r2.ok)return{ok:true,data:await r2.json()};
-  throw new Error("DB_UNAVAILABLE");
+  const r=await fetch(proxyUrl,opts);
+  if(r.status===404)return{notFound:true};
+  if(r.ok)return{ok:true,data:await r.json()};
+  throw new Error("DB_ERR_"+r.status);
 };
 const fsAdd=async(c,d)=>{
   const res=await fsCall(c,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})});
@@ -169,9 +170,6 @@ const fsList=async c=>{
 const fsPatch=async(p,d)=>{
   const m=Object.keys(d).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join("&");
   await fsCall(p,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})},`&${m}`);
-};
-const fsDelete=async p=>{
-  await fsCall(p,{method:"DELETE"});
 };
 let isDriver=false,driverTab="orders",step="from",order={},curOrderId=localStorage.getItem("ap_oid")||"",selPlan=null;
 let drvPhone=localStorage.getItem("ap_dphone")||"",drvExp=Number(localStorage.getItem("ap_dexp")||0);
@@ -246,10 +244,16 @@ const fetchAddressSuggestions=async query=>{
   return res.slice(0,6);
 };
 const geocodeCoords=async addr=>{
+  const q=formatMapQuery(addr);
   try{
-    const u="https://nominatim."+"openstreetmap.org/search?format=json&limit=1&countrycodes=ru&q="+encodeURIComponent(formatMapQuery(addr));
+    const u="https://nominatim."+"openstreetmap.org/search?format=json&limit=1&countrycodes=ru&q="+encodeURIComponent(q);
     const r=await fetch(u);
-    if(r.ok){const a=await r.json();const f=a.at(0);if(f)return{lat:String(f.lat),lon:String(f.lon)}}
+    if(r.ok){const a=await r.json();const f=a.at(0);if(f)return{lat:Number(f.lat),lon:Number(f.lon)}}
+  }catch(_){}
+  try{
+    const pUrl="https://photon."+"komoot.io/api/?limit=1&lat=63.567&lon=53.683&q="+encodeURIComponent(q);
+    const r2=await fetch(pUrl);
+    if(r2.ok){const j=await r2.json();const f=(j.features||[]).at(0);if(f&&f.geometry){const c=f.geometry.coordinates;return{lat:Number(c.at(1)),lon:Number(c.at(0))}}}
   }catch(_){}
   return null;
 };
@@ -278,17 +282,24 @@ const handleStep=async()=>{
   $("chat-input").value="";$("address-suggestions").classList.add("hidden");addMsg(v,"user");
   if(step==="from"){
     order.from=formatMapQuery(v);
-    const c=await geocodeCoords(order.from);if(c){order.clientLat=c.lat;order.clientLon=c.lon}
+    const c=await geocodeCoords(order.from);if(c){order.clientLat=String(c.lat);order.clientLon=String(c.lon)}
     step="to";$("chat-input").placeholder="Куда поедем (точка Б)...";addMsg("Куда поедем? Укажите точку Б:");
   }else if(step==="to"){
     order.to=formatMapQuery(v);
-    const c=await geocodeCoords(order.to);if(c){order.toLat=c.lat;order.toLon=c.lon}
+    const c=await geocodeCoords(order.to);if(c){order.toLat=String(c.lat);order.toLon=String(c.lon)}
     step="ask_extra";hideInputs();$("extra-stop-choice").classList.remove("hidden");addMsg("Нужен ли заезд по пути?");
   }else if(step==="extraStop"){
     order.extraStop=formatMapQuery(v);step="options";hideInputs();$("trip-options-choice").classList.remove("hidden");addMsg("Выберите доп. опции при необходимости:");
+  }else if(step==="phone"){
+    const ph=normPhone(v);
+    if(ph.length<11){addMsg("Введите корректный 11-значный номер телефона (например, 89129529216):");return}
+    order.phone=ph;step="price";
+    $("chat-input").type="number";$("chat-input").placeholder="Ваша цена в рублях (например, 250)...";
+    addMsg("Предложите вашу стоимость поездки (₽):");
   }else if(step==="price"){
     const pr=parseInt(v.replace(/\D/g,""),10);
-    if(!pr||pr<50){addMsg("Укажите корректную сумму в рублях (от 50 ₽):");return}
+    if(!pr||pr<50||pr>50000){addMsg("Укажите корректную сумму в рублях (от 50 до 50 000 ₽):");return}
+    $("chat-input").type="text";
     order.price=String(pr);order.status="searching";order.createdAt=Date.now();
     hideInputs();addMsg("Публикуем заявку водителям...");
     try{
@@ -297,7 +308,7 @@ const handleStep=async()=>{
       curOrderId=id;localStorage.setItem("ap_oid",id);
       $("active-controls").classList.remove("hidden");addMsg("Заявка создана! Ищем свободных водителей...");startPassengerPoll();
     }catch(e){
-      addMsg("Ошибка сети при публикации заявки. Проверьте интернет.");$("passenger-controls").classList.remove("hidden");
+      addMsg("Ошибка связи с сервером ("+(e.message||"сеть")+"). Попробуйте ещё раз.");$("passenger-controls").classList.remove("hidden");
     }
   }
 };
@@ -315,12 +326,16 @@ $("confirm-options-btn").onclick=()=>{
   const a=[];if(selOpts.seat)a.push("Детское кресло");if(selOpts.bag)a.push("Багаж");if(selOpts.pet)a.push("Животные");
   order.options=a.join(", ");step="pay";hideInputs();$("payment-method-choice").classList.remove("hidden");addMsg(order.options||"Без доп. опций","user");addMsg("Выберите способ оплаты:");
 };
-window.choosePayment=m=>{order.payment=m;step="price";hideInputs();$("passenger-controls").classList.remove("hidden");$("chat-input").placeholder="Ваша цена в рублях (например, 250)...";addMsg(m,"user");addMsg("Предложите вашу стоимость поездки (₽):")};
+window.choosePayment=m=>{
+  order.payment=m;step="phone";hideInputs();$("passenger-controls").classList.remove("hidden");
+  $("chat-input").type="tel";$("chat-input").placeholder="Ваш номер телефона для связи...";
+  addMsg(m,"user");addMsg("Укажите ваш номер телефона для связи с водителем:");
+};
 const resetPassenger=()=>{
   clearInterval(pollTmr);clearInterval(waitTmr);localStorage.removeItem("ap_oid");curOrderId="";order={};step="from";selOpts={seat:false,bag:false,pet:false};
   ["offers-container","active-controls","new-order-controls","driver-track-card","arrived-card","intransit-card","call-driver-btn"].forEach(id=>$(id).classList.add("hidden"));
   $("coming-out-btn").classList.remove("hidden");$("coming-out-ack").classList.add("hidden");
-  $("passenger-controls").classList.remove("hidden");$("chat-input").placeholder="Откуда забрать (точка А)...";$("chat-box").innerHTML="";
+  $("passenger-controls").classList.remove("hidden");$("chat-input").type="text";$("chat-input").placeholder="Откуда забрать (точка А)...";$("chat-box").innerHTML="";
   addMsg("Добро пожаловать в АвтоПульс • Ухта! Укажите адрес подачи (точка А):");
 };
 $("new-order-btn").onclick=resetPassenger;
@@ -363,12 +378,12 @@ const startPassengerPoll=()=>{
           $("driver-track-card").classList.remove("hidden");
           const dist=o.driverLat&&o.clientLat?formatDistance(o.driverLat,o.driverLon,o.clientLat,o.clientLon):(o.distLabel||"Водитель едет к вам");
           $("driver-dist-text").textContent=dist;
-          $("map-driver-btn").classList.remove("hidden");$("map-driver-btn").onclick=()=>openMapModal(o);
+          $("map-driver-btn").onclick=()=>openMapModal(o,"pickup");
         }else if(o.status==="arrived"){
           $("arrived-card").classList.remove("hidden");if(o.arrivedAt)startWaitTimer(Number(o.arrivedAt));
         }else if(o.status==="intransit"){
           $("intransit-card").classList.remove("hidden");$("intransit-dest-text").textContent=`Назначение: ${o.to}`;
-          $("map-transit-btn").onclick=()=>openMapModal(o);
+          $("map-transit-btn").onclick=()=>openMapModal(o,"trip");
         }
       }else if(o.status==="completed"||o.status==="cancelled"){
         clearInterval(pollTmr);clearInterval(waitTmr);
@@ -414,8 +429,7 @@ $("confirm-pin-btn").onclick=async()=>{
       drvPhone=ph;drvExp=exp;localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
       $("pin-modal").classList.add("hidden");enterDriverMode();
     }else{
-      const pUrl=`${PAY_WORKER_URL}?phone=${encodeURIComponent(ph)}&days=${selPlan.days}&sum=${selPlan.priceRub}`;
-      location.href=pUrl;
+      location.href=`${PAY_WORKER_URL}?phone=${encodeURIComponent(ph)}&days=${selPlan.days}&sum=${selPlan.priceRub}`;
     }
   }catch(e){
     err.textContent="Ошибка связи с сервером. Проверьте интернет или статус Worker.";
@@ -424,7 +438,6 @@ $("confirm-pin-btn").onclick=async()=>{
     btn.disabled=false;btn.textContent="Войти";
   }
 };
-
 const startGeoShare=oid=>{
   if(geoWatchId||!navigator.geolocation)return;
   geoWatchId=navigator.geolocation.watchPosition(p=>{
@@ -456,6 +469,15 @@ const loadDriverOrders=async()=>{
         c.appendChild(row);
       }else if(mine){
         startGeoShare(o.id);
+        const tools=document.createElement("div");tools.style.cssText="display:flex;gap:6px;margin-top:4px";
+        if(o.phone){
+          const callA=document.createElement("a");callA.href=`tel:+${normPhone(o.phone)}`;callA.className="btn btn-outline-coral";callA.style.cssText="flex:1;padding:8px;font-size:13px";callA.textContent="Позвонить";
+          tools.appendChild(callA);
+        }
+        const navB=document.createElement("button");navB.type="button";navB.className="btn btn-outline-red";navB.style.cssText="flex:1;padding:8px;font-size:13px";navB.textContent="Навигатор";
+        navB.onclick=()=>openMapModal(o,o.status==="intransit"?"trip":"pickup");
+        tools.appendChild(navB);c.appendChild(tools);
+
         const act=document.createElement("div");act.style.cssText="display:flex;gap:8px;margin-top:4px";
         if(o.status==="accepted"){
           act.innerHTML='<button type="button" class="btn btn-green" style="flex:1">На месте</button>';
@@ -524,21 +546,56 @@ $("toggle-mode-btn").onclick=()=>{
 $("close-pin-btn").onclick=()=>$("pin-modal").classList.add("hidden");
 $("open-rules-btn").onclick=()=>$("rules-modal").classList.remove("hidden");
 $("accept-rules-btn").onclick=()=>{localStorage.setItem("ap_rules","1");$("rules-modal").classList.add("hidden")};
-const openMapModal=o=>{
+const openMapModal=async(o,mode="trip")=>{
   $("map-modal").classList.remove("hidden");
-  const lat=Number(o.driverLat||o.clientLat||63.567),lon=Number(o.driverLon||o.clientLon||53.683);
-  $("map-route-info").textContent=`Маршрут: ${o.from} → ${o.to}`;
+  $("map-route-info").textContent="Определяем координаты и строим маршрут...";
+  const targetAddr=mode==="pickup"?o.from:o.to;
   const yBase="https://yandex."+"ru/maps/?text=";
-  $("ext-nav-btn").href=yBase+encodeURIComponent(formatMapQuery(o.to));
-  $("ext-nav-btn").classList.remove("hidden");
-  if(window.maplibregl){
-    if(mapInst)mapInst.remove();
-    const stUrl="https://basemaps."+"://cartocdn.com";
-    mapInst=new maplibregl.Map({container:"inapp-map",style:stUrl,center:[lon,lat],zoom:13});
-    new maplibregl.Marker({color:"#FF1E42"}).setLngLat([lon,lat]).addTo(mapInst);
+  $("ext-nav-btn").href=yBase+encodeURIComponent(formatMapQuery(targetAddr));
+
+  let cA=o.clientLat&&o.clientLon?{lat:Number(o.clientLat),lon:Number(o.clientLon)}:await geocodeCoords(o.from);
+  let cB=o.toLat&&o.toLon?{lat:Number(o.toLat),lon:Number(o.toLon)}:await geocodeCoords(o.to);
+  let cDrv=o.driverLat&&o.driverLon?{lat:Number(o.driverLat),lon:Number(o.driverLon)}:null;
+  const startPt=(mode==="pickup"&&cDrv)?cDrv:(cA||{lat:63.567,lon:53.683});
+  const endPt=(mode==="pickup")?(cA||startPt):(cB||startPt);
+
+  $("map-route-info").textContent=mode==="pickup"?`Подача: ${o.from}`:`Маршрут: ${o.from} → ${o.to}`;
+  const libOk=await ensureMapLib();
+  const box=$("inapp-map");
+  if(!libOk||!window.maplibregl){
+    box.innerHTML=`<div style="padding:20px;text-align:center;color:#ccc;font-size:14px">Карта временно недоступна. Нажмите кнопку «Открыть в Яндекс.Навигаторе» ниже.</div>`;
+    return;
   }
+  if(mapInst){try{mapInst.remove()}catch(_){}mapInst=null}
+  box.innerHTML="";
+  const rasterStyle={version:8,sources:{osm:{type:"raster",tiles:["https://a.tile."+"openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256}},layers:[{id:"osm",type:"raster",source:"osm"}]};
+  mapInst=new maplibregl.Map({container:"inapp-map",style:rasterStyle,center:[startPt.lon,startPt.lat],zoom:13});
+  mapInst.on("load",async()=>{
+    mapInst.resize();
+    new maplibregl.Marker({color:"#FF1E42"}).setLngLat([startPt.lon,startPt.lat]).addTo(mapInst);
+    if(endPt.lat!==startPt.lat||endPt.lon!==startPt.lon){
+      new maplibregl.Marker({color:"#10B981"}).setLngLat([endPt.lon,endPt.lat]).addTo(mapInst);
+      const b=new maplibregl.LngLatBounds([startPt.lon,startPt.lat],[startPt.lon,startPt.lat]);
+      b.extend([endPt.lon,endPt.lat]);
+      mapInst.fitBounds(b,{padding:50,maxZoom:15});
+      try{
+        const osrm="https://router.project-"+"osrm.org/route/v1/driving/"+`${startPt.lon},${startPt.lat};${endPt.lon},${endPt.lat}?overview=full&geometries=geojson`;
+        const rr=await fetch(osrm);
+        if(rr.ok){
+          const rj=await rr.json();const rt=(rj.routes||[]).at(0);
+          if(rt&&rt.geometry){
+            mapInst.addSource("rt",{type:"geojson",data:{type:"Feature",geometry:rt.geometry}});
+            mapInst.addLayer({id:"rt-line",type:"line",source:"rt",paint:{"line-color":"#FF1E42","line-width":5}});
+            const km=(rt.distance/1000).toFixed(1),min=Math.max(1,Math.round(rt.duration/60));
+            $("map-route-info").textContent=`${mode==="pickup"?"Подача":"Маршрут"}: ~${km} км • ${min} мин`;
+          }
+        }
+      }catch(_){}
+    }
+  });
+  setTimeout(()=>{if(mapInst)mapInst.resize()},250);
 };
-$("close-map-btn").onclick=()=>$("map-modal").classList.add("hidden");
+$("close-map-btn").onclick=()=>{$("map-modal").classList.add("hidden");if(mapInst){try{mapInst.remove()}catch(_){}mapInst=null}};
 if(!localStorage.getItem("ap_rules"))$("rules-modal").classList.remove("hidden");
 if(curOrderId){addMsg("Восстанавливаем вашу активную заявку...");$("passenger-controls").classList.add("hidden");$("active-controls").classList.remove("hidden");startPassengerPoll()}
 else{addMsg("Добро пожаловать в АвтоПульс • Ухта! Укажите адрес подачи (точка А):")}
