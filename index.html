@@ -1,604 +1,525 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>АвтоПульс • Ухта</title>
-<style>
-:root{--bg:#0C0306;--surf:#17050A;--card:#220810;--red:#FF1E42;--bright:#FF0A37;--coral:#FF5C77;--amber:#FF9E00;--green:#10B981}
-*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-body{background:var(--bg);color:#fff;display:flex;flex-direction:column;height:100dvh;overflow:hidden}
-header{background:var(--surf);padding:12px 14px 6px;display:flex;justify-content:space-between;align-items:center}
-header h1{font-size:20px;font-weight:800;font-style:italic;color:#fff;text-shadow:0 0 12px rgba(255,30,66,.8)}
-header h1 span{color:var(--red)}
-.badge-driver{font-size:10px;font-weight:700;color:var(--coral);border:1px solid var(--coral);background:rgba(255,30,66,.18);padding:2px 6px;border-radius:6px}
-.link-btn{background:none;border:none;color:var(--coral);font-size:13px;font-weight:700;cursor:pointer;padding:6px}
-.speed-bar{background:var(--surf);width:100%;height:8px;display:block;border-bottom:1px solid rgba(255,30,66,.3)}
-#chat-box,#driver-box,#driver-chat-box{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.msg{max-width:82%;padding:11px 14px;border-radius:18px;font-size:15px;line-height:1.4;word-wrap:break-word}
-.msg.bot{background:var(--card);align-self:flex-start;border:1.2px solid rgba(255,92,119,.65)}
-.msg.user{background:rgba(255,30,66,.25);align-self:flex-end;border:1.2px solid var(--red)}
-#offers-container{padding:10px 12px;display:flex;flex-direction:column;gap:8px;max-height:44vh;overflow-y:auto;background:var(--surf);border-top:1px solid rgba(255,30,66,.5)}
-.offer-card,.card{background:var(--card);border:1.5px solid var(--red);padding:14px;border-radius:16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 14px rgba(255,30,66,.3)}
-.card.accepted{border-color:var(--coral)}
-.bottom-bar{background:var(--surf);padding:10px 12px;border-top:1px solid rgba(255,30,66,.35);display:flex;gap:8px}
-input{flex:1;background:var(--card);border:1.2px solid rgba(255,30,66,.55);border-radius:14px;padding:12px;color:#fff;font-size:15px;outline:none}
-.btn{background:var(--red);color:#fff;border:1.5px solid var(--red);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none}
-.btn:disabled{background:#241016;border-color:#444;color:#777}
-.btn-coral{background:var(--coral);border-color:var(--coral)}
-.btn-green{background:var(--green);color:#000;border-color:var(--green)}
-.btn-outline-red{background:var(--card);border:1.5px solid var(--red);color:#fff}
-.btn-outline-coral{background:var(--card);border:1.5px solid var(--coral);color:#fff}
-.hidden{display:none!important}
-.modal{position:fixed;inset:0;background:rgba(12,3,6,.92);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
-.modal-content{background:var(--surf);border:1.5px solid var(--red);padding:18px;border-radius:20px;width:100%;max-width:390px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
-.plans-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-#inapp-map{width:100%;height:330px;min-height:330px;border-radius:14px;border:1.2px solid var(--red);background:#12060A;position:relative;overflow:hidden}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0B0B0D" />
+  <title>АвтоПульс • Ухта</title>
+  <link rel="stylesheet" href="https://unpkg.com" />
+  <style>
+    :root {
+      --bg: #0B0B0D;
+      --card: #131318;
+      --coral: #FF1E42;
+      --coral-dim: rgba(255, 30, 66, 0.25);
+      --green: #10B981;
+      --orange: #F59E0B;
+      --text: #FFFFFF;
+      --muted: #9CA3AF;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #050507; color: var(--text); display: flex; justify-content: center; min-height: 100vh; }
+    .app-wrap { width: 100%; max-width: 480px; background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; position: relative; border-left: 1px solid #1f1f26; border-right: 1px solid #1f1f26; }
+    .hidden { display: none !important; }
+
+    /* Header */
+    header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--coral-dim); background: rgba(11,11,13,0.95); position: sticky; top: 0; z-index: 20; }
+    .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; display: flex; align-items: center; gap: 6px; }
+    .logo span { color: var(--coral); }
+    .logo-badge { font-size: 10px; border: 1px solid var(--coral); color: var(--coral); padding: 2px 5px; border-radius: 5px; font-weight: 700; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .link-btn { background: none; border: none; color: var(--coral); font-size: 14px; font-weight: 600; cursor: pointer; }
+
+    /* Buttons & Inputs */
+    .btn { background: var(--coral); color: #fff; border: none; border-radius: 12px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.15s; text-align: center; text-decoration: none; display: inline-block; }
+    .btn:active { transform: scale(0.98); }
+    .btn-outline-coral { background: transparent; border: 1.5px solid var(--coral); color: #fff; }
+    .btn-sm { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+    input, select { width: 100%; background: #16161D; border: 1.5px solid #2A2A35; color: #fff; padding: 12px 14px; border-radius: 12px; font-size: 15px; outline: none; }
+    input:focus { border-color: var(--coral); }
+
+    /* Driver Top Panel */
+    #driver-top-panel { padding: 12px 16px; border-bottom: 1px solid #1E1E26; }
+    .sub-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 12px; }
+    #driver-sub-left { color: var(--green); font-weight: 600; }
+    #driver-phone-lbl { color: var(--muted); }
+    .tabs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Content & Cards */
+    main { flex: 1; padding: 14px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .order-card { background: var(--card); border: 1.5px solid var(--coral-dim); border-radius: 16px; padding: 14px; box-shadow: 0 0 18px rgba(255, 30, 66, 0.08); }
+    .addr-line { font-size: 15px; line-height: 1.4; margin-bottom: 6px; font-weight: 500; }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .badge { font-size: 12px; padding: 4px 10px; border-radius: 8px; font-weight: 600; }
+    .badge-orange { border: 1px solid var(--orange); color: var(--orange); background: rgba(245, 158, 11, 0.08); }
+    .badge-green { border: 1px solid var(--green); color: var(--green); background: rgba(16, 185, 129, 0.08); }
+    .client-phone { font-size: 14px; color: var(--coral); margin: 8px 0; font-weight: 600; }
+    .client-phone a { color: #fff; text-decoration: underline; }
+    .offer-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px; margin-top: 10px; }
+    .offer-sent { color: var(--muted); font-size: 14px; margin-top: 8px; }
+
+    /* Chat */
+    .chat-msg { background: #181820; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; border-left: 3px solid var(--coral); }
+    .bottom-bar { padding: 12px 16px; background: var(--bg); border-top: 1px solid #1E1E26; display: flex; flex-direction: column; gap: 8px; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* Modals */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.82); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+    .modal-box { background: #14141A; border: 1.5px solid var(--coral-dim); border-radius: 18px; width: 100%; max-width: 440px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-title { font-size: 17px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+    .plan-card { border: 1.5px solid #2A2A35; border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .plan-card:hover { border-color: var(--coral); }
+    #inapp-map { width: 100%; height: 280px; border-radius: 12px; overflow: hidden; background: #1E1E24; }
+  </style>
 </head>
 <body>
-<header>
-  <div style="display:flex;align-items:center;gap:8px"><h1>Авто<span>Пульс</span></h1><span id="driver-badge" class="badge-driver hidden">АВТО</span></div>
-  <div style="display:flex;align-items:center;gap:8px"><button type="button" class="link-btn" id="open-rules-btn">Правила</button><button type="button" class="btn btn-outline-red" style="padding:7px 12px;font-size:13px" id="toggle-mode-btn">Водитель</button></div>
-</header>
-<svg class="speed-bar" viewBox="0 0 360 8" preserveAspectRatio="none"><line x1="0" y1="3" x2="360" y2="3" stroke="#FF1E42" stroke-width="2.5"/></svg>
-<div id="chat-box"></div>
-<div id="offers-container" class="hidden"><span style="font-size:14px;color:#FF5C77;font-weight:700">Предложения от водителей:</span><div id="offers-list" style="display:flex;flex-direction:column;gap:8px"></div></div>
-<div id="extra-stop-choice" class="bottom-bar hidden"><button type="button" class="btn" id="no-extra-btn" style="flex:1">Нет, сразу в точку Б</button><button type="button" class="btn btn-outline-coral" id="add-extra-btn" style="flex:1">Добавить адрес</button></div>
-<div id="trip-options-choice" class="bottom-bar hidden" style="flex-direction:column;gap:8px">
-  <div style="display:flex;gap:8px;width:100%">
-    <button type="button" class="btn btn-outline-red" id="opt-seat-btn" style="flex:1;padding:8px">Кресло</button>
-    <button type="button" class="btn btn-outline-red" id="opt-bag-btn" style="flex:1;padding:8px">Багаж</button>
-    <button type="button" class="btn btn-outline-red" id="opt-pet-btn" style="flex:1;padding:8px">Животные</button>
+<div class="app-wrap">
+  <header>
+    <div class="logo">
+      Авто<span>Пульс</span>
+      <span class="logo-badge">АВТО</span>
+      <span id="driver-badge" class="logo-badge hidden" style="background:var(--coral);color:#fff;">ВОДИТЕЛЬ</span>
+    </div>
+    <div class="header-actions">
+      <button id="open-rules-btn" class="link-btn">Правила</button>
+      <button id="toggle-mode-btn" class="btn btn-outline-coral btn-sm">Водитель</button>
+    </div>
+  </header>
+
+  <!-- Панель водителя -->
+  <div id="driver-top-panel" class="hidden">
+    <div class="sub-row">
+      <span id="driver-sub-left">Подписка: 0 дн.</span>
+      <span id="driver-phone-lbl"></span>
+    </div>
+    <div class="tabs-row">
+      <button id="tab-orders-btn" class="btn">Заказы</button>
+      <button id="tab-chat-btn" class="btn btn-outline-coral">Чат водителей</button>
+    </div>
   </div>
-  <button type="button" class="btn btn-green" id="confirm-options-btn" style="width:100%">Без доп. опций -> Оплата</button>
-</div>
-<div id="payment-method-choice" class="bottom-bar hidden">
-  <button type="button" class="btn btn-outline-coral" style="flex:1" onclick="choosePayment('Наличные')">Наличные</button>
-  <button type="button" class="btn btn-outline-coral" style="flex:1" onclick="choosePayment('СБП')">СБП</button>
-  <button type="button" class="btn btn-outline-coral" style="flex:1" onclick="choosePayment('Сбер')">Сбер</button>
-</div>
-<div id="address-suggestions" class="hidden" style="background:#17050A;border-top:1px solid rgba(255,30,66,.45);padding:8px 12px;display:flex;flex-direction:column;gap:6px;max-height:32vh;overflow-y:auto"></div>
-<div id="passenger-controls" class="bottom-bar"><input type="text" id="chat-input" placeholder="Откуда забрать (точка А)..."><button type="button" class="btn" id="send-btn">Отпр.</button></div>
-<div id="active-controls" class="bottom-bar hidden" style="flex-direction:column">
-  <div id="driver-track-card" class="hidden" style="background:#220810;border:1.2px solid #FF5C77;border-radius:14px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
-    <div><div style="color:#FF5C77;font-weight:700;font-size:14px">Водитель в пути</div><div id="driver-dist-text" style="font-size:13px">Определяем координаты...</div></div>
-    <button type="button" id="map-driver-btn" class="btn" style="padding:8px 12px;font-size:13px">На карте</button>
+
+  <!-- Основная рабочая область -->
+  <main>
+    <!-- Режим пассажира -->
+    <div id="chat-box" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div id="offers-container" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+    <!-- Режим водителя -->
+    <div id="driver-box" class="hidden" style="display:flex;flex-direction:column;gap:12px;"></div>
+    <div id="driver-chat-box" class="hidden" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </main>
+
+  <!-- Нижние панели управления -->
+  <div id="passenger-controls" class="bottom-bar">
+    <input id="inp-from" placeholder="Откуда (точка А): г. Ухта, ..." />
+    <input id="inp-to" placeholder="Куда (точка Б): ..." />
+    <div class="row-2">
+      <select id="inp-opt">
+        <option value="">Без опций</option>
+        <option value="Багаж">Опции: Багаж</option>
+        <option value="Животные">Опции: Животные</option>
+        <option value="Детское кресло">Опции: Детское кресло</option>
+      </select>
+      <select id="inp-pay">
+        <option value="СБП">Оплата: СБП</option>
+        <option value="Наличные">Оплата: Наличные</option>
+      </select>
+    </div>
+    <input id="inp-phone" type="tel" placeholder="Ваш телефон (для связи водителя)" />
+    <button id="create-order-btn" class="btn">Создать заявку</button>
   </div>
-  <div id="arrived-card" class="hidden" style="background:#220810;border:1.5px solid #10B981;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px">
-    <div style="color:#10B981;font-weight:800;font-size:16px">Водитель на месте!</div>
-    <div id="wait-timer-text" style="color:#FF5C77;font-weight:700;font-size:15px">Бесплатное ожидание: 03:00</div>
-    <button type="button" id="coming-out-btn" class="btn btn-green" style="width:100%">Выхожу</button>
-    <div id="coming-out-ack" class="hidden" style="color:#ccc;font-size:13px">Водитель предупреждён, что вы выходите</div>
+
+  <div id="active-controls" class="bottom-bar hidden">
+    <button id="cancel-order-btn" class="btn btn-outline-coral">Отменить заявку</button>
   </div>
-  <div id="intransit-card" class="hidden" style="background:#220810;border:1.5px solid #FF0A37;border-radius:14px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">
-    <div><div id="intransit-title-text" style="color:#FF5C77;font-weight:800;font-size:14px">В пути в точку Б</div><div id="intransit-dest-text" style="font-size:13px">Маршрут активен</div></div>
-    <button type="button" id="map-transit-btn" class="btn" style="padding:8px 12px;font-size:13px">На карте</button>
+
+  <div id="driver-chat-controls" class="bottom-bar hidden">
+    <div style="display:flex;gap:8px;">
+      <input id="drv-chat-inp" placeholder="Сообщение в чат водителей..." />
+      <button id="drv-chat-send" class="btn">Отправить</button>
+    </div>
   </div>
-  <a id="call-driver-btn" href="#" class="btn btn-green hidden" style="width:100%">Позвонить водителю</a>
-  <button type="button" class="btn btn-outline-red" id="cancel-order-btn" style="width:100%">Отменить заявку</button>
 </div>
-<div id="new-order-controls" class="bottom-bar hidden"><button type="button" class="btn" id="new-order-btn" style="width:100%">Новая заявка</button></div>
-<div id="driver-top-panel" class="hidden" style="background:#17050A;border-bottom:1px solid rgba(255,30,66,.35);padding:8px 12px;display:flex;flex-direction:column;gap:8px">
-  <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span id="driver-sub-left" style="color:#10B981;font-weight:700">Подписка активна</span><span id="driver-phone-lbl" style="color:#FF5C77;font-weight:600"></span></div>
-  <div style="display:flex;gap:8px"><button type="button" class="btn" id="tab-orders-btn" style="flex:1;padding:8px">Заказы</button><button type="button" class="btn btn-outline-coral" id="tab-chat-btn" style="flex:1;padding:8px">Чат водителей</button></div>
+
+<!-- Модальное окно: Вход водителя и оплата подписки через Робокассу -->
+<div id="pin-modal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>Доступ для водителей</span>
+      <button id="close-pin-btn" class="link-btn">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);">Введите ваш номер телефона и выберите тариф подписки для приема заказов в г. Ухта:</p>
+    <input id="drv-login-phone" type="tel" placeholder="79991234567" />
+    <div id="plans-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
 </div>
-<div id="driver-box" class="hidden"></div>
-<div id="driver-chat-box" class="hidden"></div>
-<div id="driver-chat-controls" class="bottom-bar hidden"><input type="text" id="driver-chat-input" placeholder="Сообщение водителям..."><button type="button" class="btn" id="driver-chat-send">Отпр.</button></div>
-<div id="map-modal" class="modal hidden"><div class="modal-content">
-  <h3 id="map-modal-title" style="color:#FF5C77;font-size:16px">3D-Навигация АвтоПульс</h3>
-  <div id="inapp-map"></div>
-  <div id="map-route-info" style="font-size:13px;text-align:center;background:#220810;padding:8px;border-radius:10px;border:1px solid #FF1E42">Строим маршрут...</div>
-  <a id="ext-nav-btn" href="#" target="_blank" class="btn btn-coral" style="width:100%">Открыть в Яндекс.Навигаторе</a>
-  <button type="button" class="btn" id="close-map-btn" style="width:100%">Закрыть карту</button>
-</div></div>
-<div id="rules-modal" class="modal hidden"><div class="modal-content">
-  <h3 style="color:#FF5C77;font-size:17px">ПРАВИЛА СЕРВИСА АВТОПУЛЬС</h3>
-  <p style="font-size:13px;color:#ddd"><strong>1. Статус:</strong> «АвтоПульс» — информационная площадка для поиска попутчиков, не является службой такси.</p>
-  <p style="font-size:13px;color:#ddd"><strong>2. Ответственность:</strong> Все договоренности заключаются напрямую между пассажиром и водителем.</p>
-  <button type="button" class="btn" id="accept-rules-btn" style="width:100%">Принимаю условия</button>
-</div></div>
-<div id="pin-modal" class="modal hidden"><div class="modal-content">
-  <h3 id="pin-modal-title" style="color:#FF5C77;font-size:17px">ВХОД ДЛЯ ВОДИТЕЛЯ</h3>
-  <p id="pin-modal-desc" style="font-size:13px;color:#ccc">Войдите по PIN или выберите тариф:</p>
-  <button type="button" class="btn" id="trial-plan-btn" style="width:100%">Получить PIN бесплатно на 180 дней</button>
-  <div id="paid-plans-grid" class="plans-grid"></div>
-  <input type="tel" id="driver-phone-input" placeholder="Номер телефона">
-  <input type="password" id="pin-input" maxlength="4" inputmode="numeric" placeholder="Личный PIN (4 цифры)">
-  <div id="pin-error" style="color:#FF5C77;font-size:13px" class="hidden"></div>
-  <button type="button" class="link-btn hidden" id="back-to-login-btn" style="text-align:left;padding:0">Вернуться ко входу по PIN</button>
-  <div style="display:flex;gap:8px"><button type="button" class="btn btn-outline-red" id="close-pin-btn" style="flex:1">Закрыть</button><button type="button" class="btn" id="confirm-pin-btn" style="flex:1">Войти</button></div>
-</div></div>
+
+<!-- Модальное окно: Карта и маршрут -->
+<div id="map-modal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>Карта маршрута</span>
+      <button id="close-map-btn" class="link-btn">✕</button>
+    </div>
+    <div id="map-route-info" style="font-size:13px;color:var(--muted);">Загрузка...</div>
+    <div id="inapp-map"></div>
+    <a id="ext-nav-btn" href="#" target="_blank" rel="noopener" class="btn">Открыть в Яндекс.Навигаторе</a>
+  </div>
+</div>
+
+<!-- Модальное окно: Правила -->
+<div id="rules-modal" class="modal-backdrop hidden">
+  <div class="modal-box">
+    <div class="modal-title"><span>Правила сервиса АвтоПульс</span></div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.5;">
+      Сервис «АвтоПульс • Ухта» является информационной доской объявлений для совместных поездок.
+      Водитель и пассажир договариваются о цене напрямую. Соблюдайте ПДД и взаимную вежливость.
+    </p>
+    <button id="accept-rules-btn" class="btn">Понятно, продолжить</button>
+  </div>
+</div>
+
 <script>
-const DOMAIN_BASE="https://pay."+"avtopulse-uhta.ru";
-const PAY_WORKER_URL=DOMAIN_BASE+"/pay";
-const FS_PROXY=DOMAIN_BASE+"/fs";
-const DRIVER_PLANS=[
-  {days:180,priceRub:0,label:"180 дней • Бесплатно"},
-  {days:1,priceRub:300,label:"1 день • 300 ₽"},
-  {days:3,priceRub:800,label:"3 дня • 800 ₽"},
-  {days:7,priceRub:1700,label:"7 дней • 1700 ₽"},
-  {days:30,priceRub:2700,label:"30 дней • 2700 ₽"}
-];
-const $=id=>document.getElementById(id);
-let mapLibReady=null;
-const ensureMapLib=()=>{
-  if(window.maplibregl)return Promise.resolve(true);
-  if(mapLibReady)return mapLibReady;
-  mapLibReady=new Promise(resolve=>{
-    const uBase="https://unpkg."+"com/maplibre-gl@3.6.2/dist/";
-    const c=document.createElement("link");c.rel="stylesheet";c.href=uBase+"maplibre-gl.css";document.head.appendChild(c);
-    const s=document.createElement("script");s.src=uBase+"maplibre-gl.js";
-    s.onload=()=>resolve(true);s.onerror=()=>resolve(false);
-    document.head.appendChild(s);
-  });
-  return mapLibReady;
-};
-ensureMapLib();
-const toFs=o=>{
-  const f={};
-  for(const[k,v]of Object.entries(o))f[k]=typeof v==="number"?{integerValue:String(Math.trunc(v))}:{stringValue:String(v??"")};
-  return f;
-};
-const fromFs=d=>{
-  if(!d||!d.fields)return null;
-  const o={id:d.name?d.name.split("/").pop():""};
-  for(const[k,v]of Object.entries(d.fields))o[k]="stringValue"in v?v.stringValue:Number(v.integerValue||v.doubleValue||0);
-  return o;
-};
-const fsCall=async(path,opts={},extra="")=>{
-  const proxyUrl=`${FS_PROXY}?path=${encodeURIComponent(path)}${extra.replace("?","&")}`;
-  const r=await fetch(proxyUrl,opts);
-  if(r.status===404)return{notFound:true};
-  if(r.ok)return{ok:true,data:await r.json()};
-  throw new Error("DB_ERR_"+r.status);
-};
-const fsAdd=async(c,d)=>{
-  const res=await fsCall(c,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})});
-  return res.ok&&res.data.name?res.data.name.split("/").pop():null;
-};
-const fsGet=async p=>{
-  const res=await fsCall(p);
-  return res.ok?fromFs(res.data):null;
-};
-const fsList=async c=>{
-  const res=await fsCall(c,{},"&pageSize=100");
-  return res.ok?(res.data.documents||[]).map(fromFs).filter(Boolean):[];
-};
-const fsPatch=async(p,d)=>{
-  const m=Object.keys(d).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join("&");
-  await fsCall(p,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})},`&${m}`);
-};
-let isDriver=false,driverTab="orders",step="from",order={},curOrderId=localStorage.getItem("ap_oid")||"",selPlan=null;
-let drvPhone=localStorage.getItem("ap_dphone")||"",drvExp=Number(localStorage.getItem("ap_dexp")||0);
-let selOpts={seat:false,bag:false,pet:false},pollTmr=null,waitTmr=null,geoWatchId=null,mapInst=null;
-const normPhone=p=>{
-  let d=String(p||"").replace(/\D/g,"");
-  if(d.length===11&&d.startsWith("8"))d="7"+d.slice(1);
-  if(d.length===10)d="7"+d;
-  return d;
-};
-const distanceMeters=(lat1,lon1,lat2,lon2)=>{
-  const R=6371000,toRad=x=>x*Math.PI/180;
-  const dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1);
-  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-  return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
-};
-const formatDistance=(lat1,lon1,lat2,lon2)=>{
-  const m=distanceMeters(Number(lat1),Number(lon1),Number(lat2),Number(lon2));
-  if(!m||m>100000)return"В пути (Ухта)";
-  return m<1000?`${m} м от вас`:`${(m/1000).toFixed(1)} км от вас`;
-};
-const formatMapQuery=addr=>{
-  const clean=String(addr||"").trim();
-  if(!clean)return"";
-  const known=["ухта","водный","ярега","шудаяг","седью","боровой","сосногорск","нижний одес","сыктывкар","емва","троицко"];
-  return known.some(k=>clean.toLowerCase().includes(k))||clean.includes(",")?clean:`Ухта, ${clean}`;
-};
-const LOCAL_CATALOG=[
-  "г. Ухта, пр-т Ленина","пгт. Водный, ул. Ленина","пгт. Ярега, ул. Ленина","г. Сосногорск, ул. Ленина",
-  "г. Ухта, ул. Мира","пгт. Водный, ул. Мира","пгт. Ярега, ул. Мира","г. Сосногорск, ул. Мира",
-  "г. Ухта, ул. Октябрьская","пгт. Водный, ул. Октябрьская","пгт. Ярега, ул. Октябрьская",
-  "г. Ухта, ул. Советская","пгт. Водный, ул. Советская","пгт. Ярега, ул. Советская","г. Сосногорск, ул. Советская",
-  "г. Ухта, ул. Первомайская","пгт. Водный, ул. Первомайская","пгт. Ярега, ул. Первомайская",
-  "г. Ухта, ул. Гагарина","пгт. Водный, ул. Гагарина","пгт. Ярега, ул. Гагарина","г. Сосногорск, ул. Гагарина",
-  "г. Ухта, ул. Набережная Нефтяников","г. Ухта, ул. Набережная Газовиков","г. Ухта, ул. Оплеснина",
-  "г. Ухта, ул. Сенюкова","г. Ухта, ул. Интернациональная","г. Ухта, ул. Бушуева",
-  "г. Ухта, ул. Юбилейная","г. Ухта, ул. Куратова","г. Ухта, пр-т Космонавтов",
-  "г. Ухта, пр-т Зерюнова","г. Ухта, ул. Дзержинского","г. Ухта, ул. Чибьюская",
-  "пгт. Шудаяг, ул. Тиманская","пгт. Шудаяг, ул. Шахтёрская","пгт. Шудаяг, ул. Павлова",
-  "пгт. Водный, ул. Торопова","пгт. Водный, ул. Лесная","пгт. Водный, ул. Школьная",
-  "пгт. Ярега, ул. Лермонтова","пгт. Ярега, ул. Строительная",
-  "г. Сосногорск, 6-й микрорайон","г. Сосногорск, ул. Оплеснина",
-  "г. Ухта, Аэропорт","г. Ухта, Ж/Д Вокзал","г. Ухта, ТРЦ Ярмарка","пгт. Седью","пгт. Боровой"
-];
-const fetchAddressSuggestions=async query=>{
-  const q=String(query||"").trim();if(q.length<2)return[];
-  const low=q.toLowerCase(),streetPart=q.split(",").at(0).trim(),res=[];
-  const tokens=low.split(/[\s,]+/).filter(t=>t.length>=2);
-  const houseNum=low.split(/[\s,]+/).find(t=>t.length>0&&/^\d/.test(t));
-  for(const item of LOCAL_CATALOG){
-    const itemLow=item.toLowerCase();
-    if(tokens.every(t=>itemLow.includes(t))){
-      const fmt=houseNum&&!itemLow.includes(houseNum)?`${item}, ${houseNum}`:item;
-      if(!res.includes(fmt))res.push(fmt);
-    }
-  }
-  try{
-    const pUrl="https://photon."+"komoot.io/api/?limit=5&lat=63.567&lon=53.683&q="+encodeURIComponent("Ухта "+streetPart);
-    const r=await fetch(pUrl);
-    if(r.ok){
-      const j=await r.json();
-      (j.features||[]).forEach(f=>{
-        const p=f.properties||{};
-        const place=[p.city,p.town,p.village,p.hamlet,p.locality].find(Boolean)||"";
-        const street=p.street||p.name||"";
-        const num=p.housenumber||houseNum||"";
-        const line=[place,street,num].filter(Boolean).join(", ");
-        if(line&&!res.includes(line))res.push(line);
-      });
-    }
-  }catch(_){}
-  return res.slice(0,6);
-};
-const geocodeCoords=async addr=>{
-  const q=formatMapQuery(addr);
-  try{
-    const u="https://nominatim."+"openstreetmap.org/search?format=json&limit=1&countrycodes=ru&q="+encodeURIComponent(q);
-    const r=await fetch(u);
-    if(r.ok){const a=await r.json();const f=a.at(0);if(f)return{lat:Number(f.lat),lon:Number(f.lon)}}
-  }catch(_){}
-  try{
-    const pUrl="https://photon."+"komoot.io/api/?limit=1&lat=63.567&lon=53.683&q="+encodeURIComponent(q);
-    const r2=await fetch(pUrl);
-    if(r2.ok){const j=await r2.json();const f=(j.features||[]).at(0);if(f&&f.geometry){const c=f.geometry.coordinates;return{lat:Number(c.at(1)),lon:Number(c.at(0))}}}
-  }catch(_){}
-  return null;
-};
-const addMsg=(txt,who="bot")=>{const d=document.createElement("div");d.className=`msg ${who}`;d.textContent=txt;$("chat-box").appendChild(d);$("chat-box").scrollTop=$("chat-box").scrollHeight};
-const hideInputs=()=>{["passenger-controls","extra-stop-choice","trip-options-choice","payment-method-choice","address-suggestions"].forEach(id=>$(id).classList.add("hidden"))};
-let sugTmr=null;
-$("chat-input").oninput=()=>{
-  clearTimeout(sugTmr);
-  const v=$("chat-input").value.trim();
-  if(!["from","to","extraStop"].includes(step)||v.length<2){$("address-suggestions").classList.add("hidden");return}
-  sugTmr=setTimeout(async()=>{
-    const list=await fetchAddressSuggestions(v);
-    const box=$("address-suggestions");box.innerHTML="";
-    if(!list.length){box.classList.add("hidden");return}
-    list.forEach(name=>{
-      const b=document.createElement("button");b.type="button";b.className="btn btn-outline-red";
-      b.style.cssText="text-align:left;padding:8px 10px;font-size:13px";b.textContent=name;
-      b.onclick=()=>{$("chat-input").value=name;box.classList.add("hidden")};
-      box.appendChild(b);
-    });
-    box.classList.remove("hidden");
-  },300);
-};
-const handleStep=async()=>{
-  const v=$("chat-input").value.trim();if(!v)return;
-  $("chat-input").value="";$("address-suggestions").classList.add("hidden");addMsg(v,"user");
-  if(step==="from"){
-    order.from=formatMapQuery(v);
-    const c=await geocodeCoords(order.from);if(c){order.clientLat=String(c.lat);order.clientLon=String(c.lon)}
-    step="to";$("chat-input").placeholder="Куда поедем (точка Б)...";addMsg("Куда поедем? Укажите точку Б:");
-  }else if(step==="to"){
-    order.to=formatMapQuery(v);
-    const c=await geocodeCoords(order.to);if(c){order.toLat=String(c.lat);order.toLon=String(c.lon)}
-    step="ask_extra";hideInputs();$("extra-stop-choice").classList.remove("hidden");addMsg("Нужен ли заезд по пути?");
-  }else if(step==="extraStop"){
-    order.extraStop=formatMapQuery(v);step="options";hideInputs();$("trip-options-choice").classList.remove("hidden");addMsg("Выберите доп. опции при необходимости:");
-  }else if(step==="phone"){
-    const ph=normPhone(v);
-    if(ph.length<11){addMsg("Введите корректный 11-значный номер телефона (например, 89129529216):");return}
-    order.phone=ph;step="price";
-    $("chat-input").type="number";$("chat-input").placeholder="Ваша цена в рублях (например, 250)...";
-    addMsg("Предложите вашу стоимость поездки (₽):");
-  }else if(step==="price"){
-    const pr=parseInt(v.replace(/\D/g,""),10);
-    if(!pr||pr<50||pr>50000){addMsg("Укажите корректную сумму в рублях (от 50 до 50 000 ₽):");return}
-    $("chat-input").type="text";
-    order.price=String(pr);order.status="searching";order.createdAt=Date.now();
-    hideInputs();addMsg("Публикуем заявку водителям...");
-    try{
-      const id=await fsAdd("orders",order);
-      if(!id){addMsg("Не удалось создать заявку. Попробуйте ещё раз.");$("passenger-controls").classList.remove("hidden");return}
-      curOrderId=id;localStorage.setItem("ap_oid",id);
-      $("active-controls").classList.remove("hidden");addMsg("Заявка создана! Ищем свободных водителей...");startPassengerPoll();
-    }catch(e){
-      addMsg("Ошибка связи с сервером ("+(e.message||"сеть")+"). Попробуйте ещё раз.");$("passenger-controls").classList.remove("hidden");
-    }
-  }
-};
-$("send-btn").onclick=handleStep;$("chat-input").onkeydown=e=>{if(e.key==="Enter")handleStep()};
-$("no-extra-btn").onclick=()=>{order.extraStop="";step="options";hideInputs();$("trip-options-choice").classList.remove("hidden");addMsg("Без заезда","user");addMsg("Выберите доп. опции при необходимости:")};
-$("add-extra-btn").onclick=()=>{step="extraStop";hideInputs();$("passenger-controls").classList.remove("hidden");$("chat-input").placeholder="Адрес заезда...";addMsg("Добавить адрес","user");addMsg("Укажите адрес заезда:")};
-const updOptsBtn=()=>{
-  const a=[];if(selOpts.seat)a.push("Кресло");if(selOpts.bag)a.push("Багаж");if(selOpts.pet)a.push("Животные");
-  $("confirm-options-btn").textContent=a.length?`Выбрано: ${a.join(", ")} -> Оплата`:"Без доп. опций -> Оплата";
-};
-[["opt-seat-btn","seat"],["opt-bag-btn","bag"],["opt-pet-btn","pet"]].forEach(([id,k])=>{
-  $(id).onclick=()=>{selOpts[k]=!selOpts[k];$(id).className=selOpts[k]?"btn btn-coral":"btn btn-outline-red";updOptsBtn()};
+  const $ = id => document.getElementById(id);
+  const API_BASE = '/api'; // Ваш бэкенд API
+
+  let isDriver = false;
+  let driverTab = 'orders';
+  let pollTmr = null;
+  let mapInst = null;
+  let curOrderId = localStorage.getItem('ap_cur_order') || null;
+  let drvPhone = localStorage.getItem('ap_drv_phone') || '';
+  let drvExp = Number(localStorage.getItem('ap_drv_exp') || 0);
+const draftPrices = {}; // Сохраняет введенную цену при обновлении списка
+const escapeHtml = s => String(s || '').replace(/[&<>"']/g, m => ({ '&': '&', '<': '<', '>': '>', '"': '"', "'": ''' }[m]));
+function addMsg(text) {
+const div = document.createElement('div');
+div.className = 'chat-msg';
+div.textContent = text;
+$('chat-box').appendChild(div);
+}
+function hideInputs() {
+$('passenger-controls').classList.add('hidden');
+$('active-controls').classList.add('hidden');
+}
+function formatMapQuery(addr) {
+return addr.toLowerCase().includes('ухта') ? addr : Республика Коми, Ухта, ${addr};
+}
+async function ensureMapLib() {
+if (window.maplibregl) return true;
+return new Promise(resolve => {
+const s = document.createElement('script');
+s.src = 'unpkg.com';
+s.onload = () => resolve(true);
+s.onerror = () => resolve(false);
+document.head.appendChild(s);
 });
-$("confirm-options-btn").onclick=()=>{
-  const a=[];if(selOpts.seat)a.push("Детское кресло");if(selOpts.bag)a.push("Багаж");if(selOpts.pet)a.push("Животные");
-  order.options=a.join(", ");step="pay";hideInputs();$("payment-method-choice").classList.remove("hidden");addMsg(order.options||"Без доп. опций","user");addMsg("Выберите способ оплаты:");
+}
+async function geocodeCoords(addr) {
+try {
+const q = encodeURIComponent(formatMapQuery(addr));
+const r = await fetch(https://openstreetmap.org{q});
+const d = await r.json();
+if (d && d[0]) return { lat: Number(d[0].lat), lon: Number(d[0].lon) };
+} catch (_) {}
+return null;
+}
+// --- РЕЖИМ ВОДИТЕЛЯ ---
+const enterDriverMode = () => {
+isDriver = true;
+clearInterval(pollTmr);
+['chat-box', 'offers-container', 'active-controls'].forEach(id => $(id).classList.add('hidden'));
+hideInputs();
+$('driver-badge').classList.remove('hidden');
+$('toggle-mode-btn').textContent = 'Пассажир';
+$('driver-top-panel').classList.remove('hidden');
+$('driver-phone-lbl').textContent = '+' + drvPhone;
+const daysLeft = Math.max(1, Math.ceil((drvExp - Date.now()) / 86400000));
+$('driver-sub-left').textContent = Подписка: ${daysLeft} дн.;
+switchDriverTab('orders');
+pollTmr = setInterval(() => {
+if (driverTab === 'orders') loadDriverOrders();
+else loadDriverChat();
+}, 4000);
 };
-window.choosePayment=m=>{
-  order.payment=m;step="phone";hideInputs();$("passenger-controls").classList.remove("hidden");
-  $("chat-input").type="tel";$("chat-input").placeholder="Ваш номер телефона для связи...";
-  addMsg(m,"user");addMsg("Укажите ваш номер телефона для связи с водителем:");
+const switchDriverTab = t => {
+driverTab = t;
+$('tab-orders-btn').className = t === 'orders' ? 'btn' : 'btn btn-outline-coral';
+$('tab-chat-btn').className = t === 'chat' ? 'btn' : 'btn btn-outline-coral';
+$('driver-box').classList.toggle('hidden', t !== 'orders');
+$('driver-chat-box').classList.toggle('hidden', t !== 'chat');
+$('driver-chat-controls').classList.toggle('hidden', t !== 'chat');
+if (t === 'orders') loadDriverOrders();
+else loadDriverChat();
 };
-const resetPassenger=()=>{
-  clearInterval(pollTmr);clearInterval(waitTmr);localStorage.removeItem("ap_oid");curOrderId="";order={};step="from";selOpts={seat:false,bag:false,pet:false};
-  ["offers-container","active-controls","new-order-controls","driver-track-card","arrived-card","intransit-card","call-driver-btn"].forEach(id=>$(id).classList.add("hidden"));
-  $("coming-out-btn").classList.remove("hidden");$("coming-out-ack").classList.add("hidden");
-  $("passenger-controls").classList.remove("hidden");$("chat-input").type="text";$("chat-input").placeholder="Откуда забрать (точка А)...";$("chat-box").innerHTML="";
-  addMsg("Добро пожаловать в АвтоПульс • Ухта! Укажите адрес подачи (точка А):");
+async function loadDriverOrders() {
+try {
+const res = await fetch(${API_BASE}/orders?driverPhone=${drvPhone});
+const orders = await res.json();
+$('tab-orders-btn').textContent = Заказы (${orders.length});
+if (!orders.length) {
+$('driver-box').innerHTML = 'Активных заявок пока нет...';
+return;
+}
+$('driver-box').innerHTML = orders.map(o => {
+const savedVal = draftPrices[o.id] || '';
+const isAccepted = o.status === 'accepted' && o.driverPhone === drvPhone;
+// Телефон показываем ТОЛЬКО после принятия заказа пассажиром
+const phoneBlock = (isAccepted && o.clientPhone)
+? <div class="client-phone">Телефон пассажира: <a href="tel:+${escapeHtml(o.clientPhone)}">+${escapeHtml(o.clientPhone)}</a></div>
+: '';
+const actionBlock = o.myOfferPrice
+? <div class="offer-sent">Ваша цена ${escapeHtml(o.myOfferPrice)} ₽ отправлена. ${isAccepted ? '✅ Клиент выбрал вас!' : 'Ждем ответа...'}</div>
+: <div class="offer-row"> <input type="number" placeholder="Ваша цена (₽)" value="${escapeHtml(savedVal)}" oninput="draftPrices['${o.id}']=this.value" /> <button class="btn" onclick="sendDriverOffer('${o.id}')">Предложить</button> </div>;
+return <div class="order-card"> <div class="addr-line">Пассажир (А): ${escapeHtml(o.from)}</div> <div class="addr-line">Назначение (Б): ${escapeHtml(o.to)}</div> <div class="badges"> ${o.options ?Опции: ${escapeHtml(o.options)} : ''} <span class="badge badge-green">Оплата: ${escapeHtml(o.payment || 'СБП')}</span> </div> <button class="btn btn-outline-coral btn-sm" style="width:100%;margin:6px 0;" onclick='openMapModal(${JSON.stringify(o)}, "${isAccepted ? 'pickup' : 'trip'}")'> 📍 Посмотреть маршрут на карте </button> ${phoneBlock} ${actionBlock} </div>;
+}).join('');
+} catch (_) {}
+}
+window.sendDriverOffer = async (orderId) => {
+const price = Number(draftPrices[orderId]);
+if (!price || price < 50) return alert('Укажите корректную цену (от 50 ₽)');
+await fetch(${API_BASE}/orders/${orderId}/offer, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ driverPhone: drvPhone, price })
+});
+delete draftPrices[orderId];
+loadDriverOrders();
 };
-$("new-order-btn").onclick=resetPassenger;
-$("cancel-order-btn").onclick=async()=>{if(curOrderId)try{await fsPatch(`orders/${curOrderId}`,{status:"cancelled"})}catch(_){}resetPassenger()};
-$("coming-out-btn").onclick=async()=>{if(!curOrderId)return;try{await fsPatch(`orders/${curOrderId}`,{clientComing:"1"});$("coming-out-btn").classList.add("hidden");$("coming-out-ack").classList.remove("hidden")}catch(_){}};
-const startWaitTimer=ts=>{
-  clearInterval(waitTmr);
-  const tick=()=>{
-    const left=Math.max(0,180-Math.floor((Date.now()-ts)/1000));
-    const m=String(Math.floor(left/60)).padStart(2,"0"),s=String(left%60).padStart(2,"0");
-    $("wait-timer-text").textContent=left>0?`Бесплатное ожидание: ${m}:${s}`:"Бесплатное время вышло (далее платное ожидание)";
-  };
-  tick();waitTmr=setInterval(tick,1000);
+async function loadDriverChat() {
+try {
+const res = await fetch(${API_BASE}/driver-chat);
+const msgs = await res.json();
+$('driver-chat-box').innerHTML = msgs.map(m =>
+<div class="chat-msg"><b>+${escapeHtml(m.phone.slice(-4))}:</b> ${escapeHtml(m.text)}</div>
+).join('');
+} catch (_) {}
+}
+$('drv-chat-send').onclick = async () => {
+const text = $('drv-chat-inp').value.trim();
+if (!text) return;
+$('drv-chat-inp').value = '';
+await fetch(${API_BASE}/driver-chat, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ phone: drvPhone, text })
+});
+loadDriverChat();
 };
-const startPassengerPoll=()=>{
-  clearInterval(pollTmr);
-  const poll=async()=>{
-    if(!curOrderId)return;
-    try{
-      const o=await fsGet(`orders/${curOrderId}`);if(!o)return;
-      if(o.status==="searching"||o.status==="open"){
-        const offs=await fsList(`orders/${curOrderId}/offers`);
-        if(offs.length){
-          $("offers-container").classList.remove("hidden");const lst=$("offers-list");lst.innerHTML="";
-          offs.forEach(of=>{
-            const c=document.createElement("div");c.className="offer-card";
-            c.innerHTML=`<div style="display:flex;justify-content:space-between;font-weight:700"><span>Водитель +${of.driverPhone}</span><span style="color:#10B981">${of.price} ₽</span></div><button type="button" class="btn btn-green">Выбрать водителя</button>`;
-            c.querySelector("button").onclick=async()=>{
-              await fsPatch(`orders/${curOrderId}`,{status:"accepted",driverPhone:of.driverPhone,price:of.price});
-              $("offers-container").classList.add("hidden");addMsg(`Вы выбрали водителя за ${of.price} ₽`);
-            };
-            lst.appendChild(c);
-          });
-        }
-      }else if(["accepted","arrived","intransit"].includes(o.status)){
-        $("offers-container").classList.add("hidden");$("active-controls").classList.remove("hidden");
-        if(o.driverPhone){$("call-driver-btn").href=`tel:+${normPhone(o.driverPhone)}`;$("call-driver-btn").classList.remove("hidden")}
-        ["driver-track-card","arrived-card","intransit-card"].forEach(id=>$(id).classList.add("hidden"));
-        if(o.status==="accepted"){
-          $("driver-track-card").classList.remove("hidden");
-          const dist=o.driverLat&&o.clientLat?formatDistance(o.driverLat,o.driverLon,o.clientLat,o.clientLon):(o.distLabel||"Водитель едет к вам");
-          $("driver-dist-text").textContent=dist;
-          $("map-driver-btn").onclick=()=>openMapModal(o,"pickup");
-        }else if(o.status==="arrived"){
-          $("arrived-card").classList.remove("hidden");if(o.arrivedAt)startWaitTimer(Number(o.arrivedAt));
-        }else if(o.status==="intransit"){
-          $("intransit-card").classList.remove("hidden");$("intransit-dest-text").textContent=`Назначение: ${o.to}`;
-          $("map-transit-btn").onclick=()=>openMapModal(o,"trip");
-        }
-      }else if(o.status==="completed"||o.status==="cancelled"){
-        clearInterval(pollTmr);clearInterval(waitTmr);
-        ["active-controls","offers-container"].forEach(id=>$(id).classList.add("hidden"));
-        $("new-order-controls").classList.remove("hidden");
-        addMsg(o.status==="completed"?"Поездка завершена! Спасибо, что выбрали АвтоПульс.":"Заявка отменена.");
-      }
-    }catch(_){}
-  };
-  poll();pollTmr=setInterval(poll,3500);
+// --- РОБОКАССА: ТАРИФЫ И ОПЛАТА ПОДПИСКИ ---
+function renderPlans() {
+const plans = [
+{ days: 1, price: 150, title: 'Смена 24 часа' },
+{ days: 7, price: 700, title: 'Неделя (7 дней)' },
+{ days: 30, price: 2200, title: 'Месяц (30 дней)' }
+];
+$('drv-login-phone').value = drvPhone;
+$('plans-list').innerHTML = plans.map(p => <div class="plan-card" onclick="startRobokassaPayment(${p.days}, ${p.price})"> <div> <div style="font-weight:700;font-size:15px;">${p.title}</div> <div style="font-size:12px;color:var(--muted);">Без комиссии с заказов</div> </div> <div class="btn btn-sm">${p.price} ₽</div> </div>).join('');
+}
+window.startRobokassaPayment = async (days, amount) => {
+const rawPhone = $('drv-login-phone').value.replace(/\D/g, '');
+if (rawPhone.length < 10) return alert('Введите корректный номер телефона');
+drvPhone = rawPhone.startsWith('8') ? '7' + rawPhone.slice(1) : rawPhone;
+localStorage.setItem('ap_drv_phone', drvPhone);
+// Сначала проверяем, нет ли уже активной подписки в БД
+const checkRes = await fetch(${API_BASE}/driver/status?phone=${drvPhone});
+const status = await checkRes.json();
+if (status.exp && status.exp > Date.now()) {
+drvExp = status.exp;
+localStorage.setItem('ap_drv_exp', drvExp);
+$('pin-modal').classList.add('hidden');
+return enterDriverMode();
+}
+// Иначе формируем ссылку Робокассы через сервер
+const payRes = await fetch(${API_BASE}/robokassa/create-payment, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ phone: drvPhone, days, outSum: amount })
+});
+const payData = await payRes.json();
+if (payData.paymentUrl) {
+window.location.href = payData.paymentUrl;
+} else {
+alert('Не удалось создать счет Робокассы');
+}
 };
-const renderPlans=()=>{
-  const g=$("paid-plans-grid");g.innerHTML="";
-  DRIVER_PLANS.slice(1).forEach(p=>{
-    const b=document.createElement("button");b.type="button";b.className="btn btn-outline-coral";b.style.fontSize="12px";b.textContent=p.label;
-    b.onclick=()=>{selPlan=p;$("pin-modal-desc").textContent=`Выбран тариф: ${p.label}. Введите телефон и придумайте PIN (4 цифры):`;$("back-to-login-btn").classList.remove("hidden")};
-    g.appendChild(b);
-  });
+// --- РЕЖИМ ПАССАЖИРА ---
+$('create-order-btn').onclick = async () => {
+const from = $('inp-from').value.trim();
+const to = $('inp-to').value.trim();
+const clientPhone = $('inp-phone').value.replace(/\D/g, '');
+if (!from || !to) return alert('Укажите адрес подачи (А) и назначения (Б)');
+if (clientPhone.length < 10) return alert('Укажите ваш номер телефона');
+const res = await fetch(${API_BASE}/orders, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+from,
+to,
+options: $('inp-opt').value,
+payment: $('inp-pay').value,
+clientPhone
+})
+});
+const order = await res.json();
+curOrderId = order.id;
+localStorage.setItem('ap_cur_order', curOrderId);
+$('passenger-controls').classList.add('hidden');
+$('active-controls').classList.remove('hidden');
+addMsg(Заявка создана: ${from} → ${to}. Ожидаем предложения водителей...);
+startPassengerPoll();
 };
-$("trial-plan-btn").onclick=()=>{selPlan=DRIVER_PLANS.at(0);$("pin-modal-desc").textContent="Бесплатный доступ на 180 дней. Введите телефон и придумайте PIN (4 цифры):";$("back-to-login-btn").classList.remove("hidden")};
-$("back-to-login-btn").onclick=()=>{selPlan=null;$("pin-modal-desc").textContent="Войдите по PIN или выберите тариф:";$("back-to-login-btn").classList.add("hidden")};
-$("confirm-pin-btn").onclick=async()=>{
-  const btn=$("confirm-pin-btn"),ph=normPhone($("driver-phone-input").value),pin=$("pin-input").value.trim(),err=$("pin-error");
-  err.classList.add("hidden");
-  if(ph.length<11||pin.length!==4){err.textContent="Введите корректный телефон и 4-значный PIN";err.classList.remove("hidden");return}
-  btn.disabled=true;btn.textContent="Проверка...";
-  try{
-    const list=await fsList("drivers");
-    const drv=list.find(d=>normPhone(d.phone)===ph);
-    const expVal=drv?Number(drv.expiresAt||drv.expires_at||0):0;
-    const trialUsed=drv&&(drv.trialUsed==="yes"||drv.trial_used==="1");
-    if(!selPlan){
-      if(!drv){err.textContent="Номер не зарегистрирован. Нажмите «Получить PIN бесплатно на 180 дней» или выберите тариф.";err.classList.remove("hidden");return}
-      if(String(drv.pin)!==pin){err.textContent="Неверный PIN-код";err.classList.remove("hidden");return}
-      if(expVal<Date.now()){err.textContent="Срок подписки истёк. Выберите тариф для продления.";err.classList.remove("hidden");return}
-      drvPhone=ph;drvExp=expVal;localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
-      $("pin-modal").classList.add("hidden");enterDriverMode();
-    }else if(selPlan.priceRub===0){
-      if(trialUsed){err.textContent="Бесплатный период уже использован. Войдите по своему PIN или выберите тариф.";err.classList.remove("hidden");return}
-      const exp=Date.now()+selPlan.days*86400000;
-      if(drv){await fsPatch(`drivers/${drv.id}`,{phone:ph,pin:pin,expiresAt:exp,trialUsed:"yes"})}
-      else{await fsAdd("drivers",{phone:ph,pin:pin,expiresAt:exp,trialUsed:"yes"})}
-      drvPhone=ph;drvExp=exp;localStorage.setItem("ap_dphone",drvPhone);localStorage.setItem("ap_dexp",String(drvExp));
-      $("pin-modal").classList.add("hidden");enterDriverMode();
-    }else{
-      location.href=`${PAY_WORKER_URL}?phone=${encodeURIComponent(ph)}&days=${selPlan.days}&sum=${selPlan.priceRub}`;
-    }
-  }catch(e){
-    err.textContent="Ошибка связи с сервером. Проверьте интернет или статус Worker.";
-    err.classList.remove("hidden");
-  }finally{
-    btn.disabled=false;btn.textContent="Войти";
-  }
+function startPassengerPoll() {
+clearInterval(pollTmr);
+const check = async () => {
+if (!curOrderId) return;
+try {
+const res = await fetch(${API_BASE}/orders/${curOrderId});
+const o = await res.json();
+if (!o || o.status === 'cancelled') {
+resetPassengerOrder();
+return;
+}
+$('offers-container').innerHTML = (o.offers || []).map(of => <div class="order-card"> <div style="font-weight:700;margin-bottom:6px;">Водитель (+${escapeHtml(of.driverPhone.slice(-4))})</div> <div style="font-size:18px;color:var(--green);font-weight:800;margin-bottom:10px;">Предлагает: ${escapeHtml(of.price)} ₽</div> ${o.status === 'accepted' && o.driverPhone === of.driverPhone ?✅ Водитель назначен! Тел: +${escapeHtml(of.driverPhone)}:Выбрать водителя} </div> ).join('');
+} catch (_) {}
 };
-const startGeoShare=oid=>{
-  if(geoWatchId||!navigator.geolocation)return;
-  geoWatchId=navigator.geolocation.watchPosition(p=>{
-    fsPatch(`orders/${oid}`,{driverLat:String(p.coords.latitude),driverLon:String(p.coords.longitude)}).catch(()=>{});
-  },()=>{},{enableHighAccuracy:true,maximumAge:5000});
+check();
+pollTmr = setInterval(check, 4000);
+}
+window.acceptOffer = async (driverPhone) => {
+await fetch(${API_BASE}/orders/${curOrderId}/accept, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ driverPhone })
+});
+addMsg('Вы выбрали водителя! Ожидайте подачу автомобиля.');
 };
-const loadDriverOrders=async()=>{
-  const box=$("driver-box");
-  try{
-    const list=await fsList("orders");box.innerHTML="";
-    const active=list.filter(o=>["searching","open","accepted","arrived","intransit"].includes(o.status));
-    if(!active.length){box.innerHTML='<div style="color:#888;text-align:center;margin-top:20px">Активных заявок пока нет</div>';return}
-    active.forEach(o=>{
-      const mine=o.driverPhone===drvPhone;
-      if((o.status!=="searching"&&o.status!=="open")&&!mine)return;
-      const c=document.createElement("div");c.className=`card ${mine?"accepted":""}`;
-      c.innerHTML=`<div style="display:flex;justify-content:space-between"><strong style="color:#FF5C77">${o.price} ₽ • ${o.payment||"Наличные"}</strong><span style="font-size:12px;color:#aaa">${o.status}</span></div>
-      <div style="font-size:14px"><strong>А:</strong> ${o.from}</div><div style="font-size:14px"><strong>Б:</strong> ${o.to}</div>
-      ${o.extraStop?`<div style="font-size:13px;color:#FF5C77"><strong>Заезд:</strong> ${o.extraStop}</div>`:""}
-      ${o.options?`<div style="font-size:12px;color:#10B981">Опции: ${o.options}</div>`:""}`;
-      if(o.status==="searching"||o.status==="open"){
-        const row=document.createElement("div");row.style.cssText="display:flex;gap:6px;margin-top:4px";
-        row.innerHTML=`<input type="number" value="${o.price}" style="padding:8px;font-size:14px"><button type="button" class="btn" style="padding:8px 14px">Предложить цену</button>`;
-        row.querySelector("button").onclick=async()=>{
-          const pr=String(Number(row.children.item(0).value)||o.price);
-          await fsAdd(`orders/${o.id}/offers`,{driverPhone:drvPhone,price:pr,status:"pending"});
-          row.querySelector("button").textContent="Отправлено";row.querySelector("button").disabled=true;
-        };
-        c.appendChild(row);
-      }else if(mine){
-        startGeoShare(o.id);
-        const tools=document.createElement("div");tools.style.cssText="display:flex;gap:6px;margin-top:4px";
-        if(o.phone){
-          const callA=document.createElement("a");callA.href=`tel:+${normPhone(o.phone)}`;callA.className="btn btn-outline-coral";callA.style.cssText="flex:1;padding:8px;font-size:13px";callA.textContent="Позвонить";
-          tools.appendChild(callA);
-        }
-        const navB=document.createElement("button");navB.type="button";navB.className="btn btn-outline-red";navB.style.cssText="flex:1;padding:8px;font-size:13px";navB.textContent="Навигатор";
-        navB.onclick=()=>openMapModal(o,o.status==="intransit"?"trip":"pickup");
-        tools.appendChild(navB);c.appendChild(tools);
-
-        const act=document.createElement("div");act.style.cssText="display:flex;gap:8px;margin-top:4px";
-        if(o.status==="accepted"){
-          act.innerHTML='<button type="button" class="btn btn-green" style="flex:1">На месте</button>';
-          act.querySelector("button").onclick=()=>fsPatch(`orders/${o.id}`,{status:"arrived",arrivedAt:Date.now()}).then(loadDriverOrders);
-        }else if(o.status==="arrived"){
-          act.innerHTML=`<button type="button" class="btn btn-coral" style="flex:1">Поехали в точку Б ${o.clientComing==="1"?"(Выходит!)":""}</button>`;
-          act.querySelector("button").onclick=()=>fsPatch(`orders/${o.id}`,{status:"intransit"}).then(loadDriverOrders);
-        }else if(o.status==="intransit"){
-          act.innerHTML='<button type="button" class="btn btn-green" style="flex:1">Завершить поездку</button>';
-          act.querySelector("button").onclick=()=>{if(geoWatchId){navigator.geolocation.clearWatch(geoWatchId);geoWatchId=null}fsPatch(`orders/${o.id}`,{status:"completed"}).then(loadDriverOrders)};
-        }
-        c.appendChild(act);
-      }
-      box.appendChild(c);
-    });
-  }catch(_){}
+function resetPassengerOrder() {
+clearInterval(pollTmr);
+curOrderId = null;
+localStorage.removeItem('ap_cur_order');
+$('offers-container').innerHTML = '';
+$('active-controls').classList.add('hidden');
+$('passenger-controls').classList.remove('hidden');
+}
+$('cancel-order-btn').onclick = async () => {
+if (curOrderId) {
+await fetch(${API_BASE}/orders/${curOrderId}, { method: 'DELETE' });
+}
+addMsg('Заявка отменена.');
+resetPassengerOrder();
 };
-const loadDriverChat=async()=>{
-  const box=$("driver-chat-box");
-  try{
-    const msgs=await fsList("driver_chat");
-    msgs.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));box.innerHTML="";
-    msgs.slice(-40).forEach(m=>{
-      const d=document.createElement("div");d.className=`msg ${(m.sender||m.phone)===drvPhone?"user":"bot"}`;
-      d.innerHTML=`<div style="font-size:11px;color:#FF5C77;margin-bottom:2px">+${m.sender||m.phone}</div><div>${m.text}</div>`;
-      box.appendChild(d);
-    });
-    box.scrollTop=box.scrollHeight;
-  }catch(_){}
+// --- ОБРАБОТЧИКИ КНОПОК И КАРТА ---
+$('tab-orders-btn').onclick = () => switchDriverTab('orders');
+$('tab-chat-btn').onclick = () => switchDriverTab('chat');
+$('toggle-mode-btn').onclick = () => {
+if (isDriver) {
+isDriver = false;
+clearInterval(pollTmr);
+['driver-badge', 'driver-top-panel', 'driver-box', 'driver-chat-box', 'driver-chat-controls'].forEach(id => $(id).classList.add('hidden'));
+$('toggle-mode-btn').textContent = 'Водитель';
+$('chat-box').classList.remove('hidden');
+$('offers-container').classList.remove('hidden');
+if (curOrderId) {
+$('active-controls').classList.remove('hidden');
+startPassengerPoll();
+} else {
+$('passenger-controls').classList.remove('hidden');
+}
+} else {
+if (drvPhone && drvExp > Date.now()) enterDriverMode();
+else {
+renderPlans();
+$('pin-modal').classList.remove('hidden');
+}
+}
 };
-$("driver-chat-send").onclick=async()=>{
-  const t=$("driver-chat-input").value.trim();if(!t)return;$("driver-chat-input").value="";
-  try{await fsAdd("driver_chat",{sender:drvPhone,text:t,createdAt:Date.now()});loadDriverChat()}catch(_){}
+$('close-pin-btn').onclick = () => $('pin-modal').classList.add('hidden');
+$('open-rules-btn').onclick = () => $('rules-modal').classList.remove('hidden');
+$('accept-rules-btn').onclick = () => {
+localStorage.setItem('ap_rules', '1');
+$('rules-modal').classList.add('hidden');
 };
-const enterDriverMode=()=>{
-  isDriver=true;clearInterval(pollTmr);
-  ["chat-box","offers-container","active-controls","new-order-controls"].forEach(id=>$(id).classList.add("hidden"));
-  hideInputs();$("driver-badge").classList.remove("hidden");$("toggle-mode-btn").textContent="Пассажир";
-  $("driver-top-panel").classList.remove("hidden");$("driver-phone-lbl").textContent="+"+drvPhone;
-  const daysLeft=Math.max(1,Math.ceil((drvExp-Date.now())/86400000));
-  $("driver-sub-left").textContent=`Подписка: ${daysLeft} дн.`;
-  switchDriverTab("orders");
-  pollTmr=setInterval(()=>{if(driverTab==="orders")loadDriverOrders();else loadDriverChat()},4000);
+const openMapModal = async (o, mode = 'trip') => {
+$('map-modal').classList.remove('hidden');
+$('map-route-info').textContent = 'Определяем координаты и строим маршрут...';
+const targetAddr = mode === 'pickup' ? o.from : o.to;
+$('ext-nav-btn').href = 'yandex.ru' + encodeURIComponent(formatMapQuery(targetAddr));
+let cA = o.clientLat && o.clientLon ? { lat: Number(o.clientLat), lon: Number(o.clientLon) } : await geocodeCoords(o.from);
+let cB = o.toLat && o.toLon ? { lat: Number(o.toLat), lon: Number(o.toLon) } : await geocodeCoords(o.to);
+let cDrv = o.driverLat && o.driverLon ? { lat: Number(o.driverLat), lon: Number(o.driverLon) } : null;
+const startPt = (mode === 'pickup' && cDrv) ? cDrv : (cA || { lat: 63.567, lon: 53.683 });
+const endPt = (mode === 'pickup') ? (cA || startPt) : (cB || startPt);
+$('map-route-info').textContent = mode === 'pickup' ? Подача: ${o.from} : Маршрут: ${o.from} → ${o.to};
+const libOk = await ensureMapLib();
+const box = $('inapp-map');
+if (!libOk || !window.maplibregl) {
+box.innerHTML = 'Карта временно недоступна. Нажмите кнопку «Открыть в Яндекс.Навигаторе» ниже.';
+return;
+}
+if (mapInst) { try { mapInst.remove(); } catch (_) {} mapInst = null; }
+box.innerHTML = '';
+const rasterStyle = {
+version: 8,
+sources: { osm: { type: 'raster', tiles: ['openstreetmap.org{z}/{x}/{y}.png'], tileSize: 256 } },
+layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
 };
-const switchDriverTab=t=>{
-  driverTab=t;
-  $("tab-orders-btn").className=t==="orders"?"btn":"btn btn-outline-coral";
-  $("tab-chat-btn").className=t==="chat"?"btn":"btn btn-outline-coral";
-  $("driver-box").classList.toggle("hidden",t!=="orders");
-  $("driver-chat-box").classList.toggle("hidden",t!=="chat");
-  $("driver-chat-controls").classList.toggle("hidden",t!=="chat");
-  if(t==="orders")loadDriverOrders();else loadDriverChat();
+mapInst = new maplibregl.Map({ container: 'inapp-map', style: rasterStyle, center: [startPt.lon, startPt.lat], zoom: 13 });
+mapInst.on('load', async () => {
+mapInst.resize();
+new maplibregl.Marker({ color: '#FF1E42' }).setLngLat([startPt.lon, startPt.lat]).addTo(mapInst);
+if (endPt.lat !== startPt.lat || endPt.lon !== startPt.lon) {
+new maplibregl.Marker({ color: '#10B981' }).setLngLat([endPt.lon, endPt.lat]).addTo(mapInst);
+const b = new maplibregl.LngLatBounds([startPt.lon, startPt.lat], [startPt.lon, startPt.lat]);
+b.extend([endPt.lon, endPt.lat]);
+mapInst.fitBounds(b, { padding: 50, maxZoom: 15 });
+try {
+const osrm = https://project-osrm.org{startPt.lon},${startPt.lat};${endPt.lon},${endPt.lat}?overview=full&geometries=geojson;
+const rr = await fetch(osrm);
+if (rr.ok) {
+const rj = await rr.json();
+const rt = (rj.routes || []).at(0);
+if (rt && rt.geometry) {
+mapInst.addSource('rt', { type: 'geojson', data: { type: 'Feature', geometry: rt.geometry } });
+mapInst.addLayer({ id: 'rt-line', type: 'line', source: 'rt', paint: { 'line-color': '#FF1E42', 'line-width': 5 } });
+const km = (rt.distance / 1000).toFixed(1), min = Math.max(1, Math.round(rt.duration / 60));
+$('map-route-info').textContent = ${mode === 'pickup' ? 'Подача' : 'Маршрут'}: ~${km} км • ${min} мин;
+}
+}
+} catch (_) {}
+}
+});
+setTimeout(() => { if (mapInst) mapInst.resize(); }, 250);
 };
-$("tab-orders-btn").onclick=()=>switchDriverTab("orders");
-$("tab-chat-btn").onclick=()=>switchDriverTab("chat");
-$("toggle-mode-btn").onclick=()=>{
-  if(isDriver){
-    isDriver=false;clearInterval(pollTmr);
-    ["driver-badge","driver-top-panel","driver-box","driver-chat-box","driver-chat-controls"].forEach(id=>$(id).classList.add("hidden"));
-    $("toggle-mode-btn").textContent="Водитель";$("chat-box").classList.remove("hidden");
-    if(curOrderId){$("active-controls").classList.remove("hidden");startPassengerPoll()}else{$("passenger-controls").classList.remove("hidden")}
-  }else{
-    if(drvPhone&&drvExp>Date.now())enterDriverMode();else{renderPlans();$("pin-modal").classList.remove("hidden")}
-  }
+$('close-map-btn').onclick = () => {
+$('map-modal').classList.add('hidden');
+if (mapInst) { try { mapInst.remove(); } catch (_) {} mapInst = null; }
 };
-$("close-pin-btn").onclick=()=>$("pin-modal").classList.add("hidden");
-$("open-rules-btn").onclick=()=>$("rules-modal").classList.remove("hidden");
-$("accept-rules-btn").onclick=()=>{localStorage.setItem("ap_rules","1");$("rules-modal").classList.add("hidden")};
-const openMapModal=async(o,mode="trip")=>{
-  $("map-modal").classList.remove("hidden");
-  $("map-route-info").textContent="Определяем координаты и строим маршрут...";
-  const targetAddr=mode==="pickup"?o.from:o.to;
-  const yBase="https://yandex."+"ru/maps/?text=";
-  $("ext-nav-btn").href=yBase+encodeURIComponent(formatMapQuery(targetAddr));
-
-  let cA=o.clientLat&&o.clientLon?{lat:Number(o.clientLat),lon:Number(o.clientLon)}:await geocodeCoords(o.from);
-  let cB=o.toLat&&o.toLon?{lat:Number(o.toLat),lon:Number(o.toLon)}:await geocodeCoords(o.to);
-  let cDrv=o.driverLat&&o.driverLon?{lat:Number(o.driverLat),lon:Number(o.driverLon)}:null;
-  const startPt=(mode==="pickup"&&cDrv)?cDrv:(cA||{lat:63.567,lon:53.683});
-  const endPt=(mode==="pickup")?(cA||startPt):(cB||startPt);
-
-  $("map-route-info").textContent=mode==="pickup"?`Подача: ${o.from}`:`Маршрут: ${o.from} → ${o.to}`;
-  const libOk=await ensureMapLib();
-  const box=$("inapp-map");
-  if(!libOk||!window.maplibregl){
-    box.innerHTML=`<div style="padding:20px;text-align:center;color:#ccc;font-size:14px">Карта временно недоступна. Нажмите кнопку «Открыть в Яндекс.Навигаторе» ниже.</div>`;
-    return;
-  }
-  if(mapInst){try{mapInst.remove()}catch(_){}mapInst=null}
-  box.innerHTML="";
-  const rasterStyle={version:8,sources:{osm:{type:"raster",tiles:["https://a.tile."+"openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256}},layers:[{id:"osm",type:"raster",source:"osm"}]};
-  mapInst=new maplibregl.Map({container:"inapp-map",style:rasterStyle,center:[startPt.lon,startPt.lat],zoom:13});
-  mapInst.on("load",async()=>{
-    mapInst.resize();
-    new maplibregl.Marker({color:"#FF1E42"}).setLngLat([startPt.lon,startPt.lat]).addTo(mapInst);
-    if(endPt.lat!==startPt.lat||endPt.lon!==startPt.lon){
-      new maplibregl.Marker({color:"#10B981"}).setLngLat([endPt.lon,endPt.lat]).addTo(mapInst);
-      const b=new maplibregl.LngLatBounds([startPt.lon,startPt.lat],[startPt.lon,startPt.lat]);
-      b.extend([endPt.lon,endPt.lat]);
-      mapInst.fitBounds(b,{padding:50,maxZoom:15});
-      try{
-        const osrm="https://router.project-"+"osrm.org/route/v1/driving/"+`${startPt.lon},${startPt.lat};${endPt.lon},${endPt.lat}?overview=full&geometries=geojson`;
-        const rr=await fetch(osrm);
-        if(rr.ok){
-          const rj=await rr.json();const rt=(rj.routes||[]).at(0);
-          if(rt&&rt.geometry){
-            mapInst.addSource("rt",{type:"geojson",data:{type:"Feature",geometry:rt.geometry}});
-            mapInst.addLayer({id:"rt-line",type:"line",source:"rt",paint:{"line-color":"#FF1E42","line-width":5}});
-            const km=(rt.distance/1000).toFixed(1),min=Math.max(1,Math.round(rt.duration/60));
-            $("map-route-info").textContent=`${mode==="pickup"?"Подача":"Маршрут"}: ~${km} км • ${min} мин`;
-          }
-        }
-      }catch(_){}
-    }
-  });
-  setTimeout(()=>{if(mapInst)mapInst.resize()},250);
-};
-$("close-map-btn").onclick=()=>{$("map-modal").classList.add("hidden");if(mapInst){try{mapInst.remove()}catch(_){}mapInst=null}};
-if(!localStorage.getItem("ap_rules"))$("rules-modal").classList.remove("hidden");
-if(curOrderId){addMsg("Восстанавливаем вашу активную заявку...");$("passenger-controls").classList.add("hidden");$("active-controls").classList.remove("hidden");startPassengerPoll()}
-else{addMsg("Добро пожаловать в АвтоПульс • Ухта! Укажите адрес подачи (точка А):")}
-</script>
-</body>
-</html>
+// --- ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ---
+(async function init() {
+if (!localStorage.getItem('ap_rules')) $('rules-modal').classList.remove('hidden');
+// Проверка возврата после успешной оплаты в Робокассе (?payment=success)
+const params = new URLSearchParams(window.location.search);
+if (params.get('payment') === 'success' && drvPhone) {
+window.history.replaceState({}, '', window.location.pathname);
+try {
+const res = await fetch(${API_BASE}/driver/status?phone=${drvPhone});
+const st = await res.json();
+if (st.exp > Date.now()) {
+drvExp = st.exp;
+localStorage.setItem('ap_drv_exp', drvExp);
+alert('Оплата прошла успешно! Подписка водителя активирована.');
+enterDriverMode();
+return;
+}
+} catch (_) {}
+}
+if (curOrderId) {
+addMsg('Восстанавливаем вашу активную заявку...');
+$('passenger-controls').classList.add('hidden');
+$('active-controls').classList.remove('hidden');
+startPassengerPoll();
+} else {
+addMsg('Добро пожаловать в АвтоПульс • Ухта! Укажите адрес подачи (точка А):');
+}
+})();
