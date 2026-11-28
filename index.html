@@ -28,7 +28,6 @@ input{flex:1;background:var(--card);border:1.2px solid rgba(255,30,66,.55);borde
 .btn:disabled{background:#241016;border-color:#444;color:#777}
 .btn-coral{background:var(--coral);border-color:var(--coral)}
 .btn-green{background:var(--green);color:#000;border-color:var(--green)}
-.btn-amber{background:var(--amber);color:#000;border-color:var(--amber)}
 .btn-outline-red{background:var(--card);border:1.5px solid var(--red);color:#fff}
 .btn-outline-coral{background:var(--card);border:1.5px solid var(--coral);color:#fff}
 .hidden{display:none!important}
@@ -116,6 +115,8 @@ input{flex:1;background:var(--card);border:1.2px solid rgba(255,30,66,.55);borde
 const DOMAIN_BASE="https://pay."+"avtopulse-uhta.ru";
 const PAY_WORKER_URL=DOMAIN_BASE+"/pay";
 const FS_PROXY=DOMAIN_BASE+"/fs";
+const FS_API_KEY="AIzaSyATMVgWBe34jYISjKF_eG8-BbFAdIfr0rA";
+const FS_DIRECT="https://firestore."+"://googleapis.com";
 const DRIVER_PLANS=[
   {days:180,priceRub:0,label:"180 дней • Бесплатно"},
   {days:1,priceRub:300,label:"1 день • 300 ₽"},
@@ -126,12 +127,8 @@ const DRIVER_PLANS=[
 const $=id=>document.getElementById(id);
 (()=>{
   const uBase="https://unpkg."+"com/maplibre-gl@3.6.2/dist/";
-  const c=document.createElement("link");
-  c.rel="stylesheet";c.href=uBase+"maplibre-gl.css";
-  document.head.appendChild(c);
-  const s=document.createElement("script");
-  s.src=uBase+"maplibre-gl.js";
-  document.head.appendChild(s);
+  const c=document.createElement("link");c.rel="stylesheet";c.href=uBase+"maplibre-gl.css";document.head.appendChild(c);
+  const s=document.createElement("script");s.src=uBase+"maplibre-gl.js";document.head.appendChild(s);
 })();
 const toFs=o=>{
   const f={};
@@ -144,24 +141,37 @@ const fromFs=d=>{
   for(const[k,v]of Object.entries(d.fields))o[k]="stringValue"in v?v.stringValue:Number(v.integerValue||v.doubleValue||0);
   return o;
 };
+const fsCall=async(path,opts={},extra="")=>{
+  const directUrl=`${FS_DIRECT}/${path}?key=${FS_API_KEY}${extra}`;
+  try{
+    const r=await fetch(directUrl,opts);
+    if(r.status===404)return{notFound:true};
+    if(r.ok)return{ok:true,data:await r.json()};
+  }catch(_){}
+  const proxyUrl=`${FS_PROXY}?path=${encodeURIComponent(path)}${extra.replace("?","&")}`;
+  const r2=await fetch(proxyUrl,opts);
+  if(r2.status===404)return{notFound:true};
+  if(r2.ok)return{ok:true,data:await r2.json()};
+  throw new Error("DB_UNAVAILABLE");
+};
 const fsAdd=async(c,d)=>{
-  const r=await fetch(`${FS_PROXY}?path=${encodeURIComponent(c)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})});
-  return r.ok?(await r.json()).name.split("/").pop():null;
+  const res=await fsCall(c,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})});
+  return res.ok&&res.data.name?res.data.name.split("/").pop():null;
 };
 const fsGet=async p=>{
-  const r=await fetch(`${FS_PROXY}?path=${encodeURIComponent(p)}`);
-  return r.ok?fromFs(await r.json()):null;
+  const res=await fsCall(p);
+  return res.ok?fromFs(res.data):null;
 };
 const fsList=async c=>{
-  const r=await fetch(`${FS_PROXY}?path=${encodeURIComponent(c)}&pageSize=100`);
-  return r.ok?((await r.json()).documents||[]).map(fromFs).filter(Boolean):[];
+  const res=await fsCall(c,{},"&pageSize=100");
+  return res.ok?(res.data.documents||[]).map(fromFs).filter(Boolean):[];
 };
 const fsPatch=async(p,d)=>{
   const m=Object.keys(d).map(k=>`updateMask.fieldPaths=${encodeURIComponent(k)}`).join("&");
-  await fetch(`${FS_PROXY}?path=${encodeURIComponent(p)}&mask=${encodeURIComponent(m)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})});
+  await fsCall(p,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fields:toFs(d)})},`&${m}`);
 };
 const fsDelete=async p=>{
-  await fetch(`${FS_PROXY}?path=${encodeURIComponent(p)}`,{method:"DELETE"});
+  await fsCall(p,{method:"DELETE"});
 };
 let isDriver=false,driverTab="orders",step="from",order={},curOrderId=localStorage.getItem("ap_oid")||"",selPlan=null;
 let drvPhone=localStorage.getItem("ap_dphone")||"",drvExp=Number(localStorage.getItem("ap_dexp")||0);
@@ -281,10 +291,14 @@ const handleStep=async()=>{
     if(!pr||pr<50){addMsg("Укажите корректную сумму в рублях (от 50 ₽):");return}
     order.price=String(pr);order.status="searching";order.createdAt=Date.now();
     hideInputs();addMsg("Публикуем заявку водителям...");
-    const id=await fsAdd("orders",order);
-    if(!id){addMsg("Ошибка сети при создании заявки. Попробуйте ещё раз.");$("passenger-controls").classList.remove("hidden");return}
-    curOrderId=id;localStorage.setItem("ap_oid",id);
-    $("active-controls").classList.remove("hidden");addMsg("Заявка создана! Ищем свободных водителей...");startPassengerPoll();
+    try{
+      const id=await fsAdd("orders",order);
+      if(!id){addMsg("Не удалось создать заявку. Попробуйте ещё раз.");$("passenger-controls").classList.remove("hidden");return}
+      curOrderId=id;localStorage.setItem("ap_oid",id);
+      $("active-controls").classList.remove("hidden");addMsg("Заявка создана! Ищем свободных водителей...");startPassengerPoll();
+    }catch(e){
+      addMsg("Ошибка сети при публикации заявки. Проверьте интернет.");$("passenger-controls").classList.remove("hidden");
+    }
   }
 };
 $("send-btn").onclick=handleStep;$("chat-input").onkeydown=e=>{if(e.key==="Enter")handleStep()};
@@ -310,8 +324,8 @@ const resetPassenger=()=>{
   addMsg("Добро пожаловать в АвтоПульс • Ухта! Укажите адрес подачи (точка А):");
 };
 $("new-order-btn").onclick=resetPassenger;
-$("cancel-order-btn").onclick=async()=>{if(curOrderId)await fsPatch(`orders/${curOrderId}`,{status:"cancelled"});resetPassenger()};
-$("coming-out-btn").onclick=async()=>{if(!curOrderId)return;await fsPatch(`orders/${curOrderId}`,{clientComing:"1"});$("coming-out-btn").classList.add("hidden");$("coming-out-ack").classList.remove("hidden")};
+$("cancel-order-btn").onclick=async()=>{if(curOrderId)try{await fsPatch(`orders/${curOrderId}`,{status:"cancelled"})}catch(_){}resetPassenger()};
+$("coming-out-btn").onclick=async()=>{if(!curOrderId)return;try{await fsPatch(`orders/${curOrderId}`,{clientComing:"1"});$("coming-out-btn").classList.add("hidden");$("coming-out-ack").classList.remove("hidden")}catch(_){}};
 const startWaitTimer=ts=>{
   clearInterval(waitTmr);
   const tick=()=>{
@@ -325,42 +339,44 @@ const startPassengerPoll=()=>{
   clearInterval(pollTmr);
   const poll=async()=>{
     if(!curOrderId)return;
-    const o=await fsGet(`orders/${curOrderId}`);if(!o)return;
-    if(o.status==="searching"||o.status==="open"){
-      const offs=await fsList(`orders/${curOrderId}/offers`);
-      if(offs.length){
-        $("offers-container").classList.remove("hidden");const lst=$("offers-list");lst.innerHTML="";
-        offs.forEach(of=>{
-          const c=document.createElement("div");c.className="offer-card";
-          c.innerHTML=`<div style="display:flex;justify-content:space-between;font-weight:700"><span>Водитель +${of.driverPhone}</span><span style="color:#10B981">${of.price} ₽</span></div><button type="button" class="btn btn-green">Выбрать водителя</button>`;
-          c.querySelector("button").onclick=async()=>{
-            await fsPatch(`orders/${curOrderId}`,{status:"accepted",driverPhone:of.driverPhone,price:of.price});
-            $("offers-container").classList.add("hidden");addMsg(`Вы выбрали водителя за ${of.price} ₽`);
-          };
-          lst.appendChild(c);
-        });
+    try{
+      const o=await fsGet(`orders/${curOrderId}`);if(!o)return;
+      if(o.status==="searching"||o.status==="open"){
+        const offs=await fsList(`orders/${curOrderId}/offers`);
+        if(offs.length){
+          $("offers-container").classList.remove("hidden");const lst=$("offers-list");lst.innerHTML="";
+          offs.forEach(of=>{
+            const c=document.createElement("div");c.className="offer-card";
+            c.innerHTML=`<div style="display:flex;justify-content:space-between;font-weight:700"><span>Водитель +${of.driverPhone}</span><span style="color:#10B981">${of.price} ₽</span></div><button type="button" class="btn btn-green">Выбрать водителя</button>`;
+            c.querySelector("button").onclick=async()=>{
+              await fsPatch(`orders/${curOrderId}`,{status:"accepted",driverPhone:of.driverPhone,price:of.price});
+              $("offers-container").classList.add("hidden");addMsg(`Вы выбрали водителя за ${of.price} ₽`);
+            };
+            lst.appendChild(c);
+          });
+        }
+      }else if(["accepted","arrived","intransit"].includes(o.status)){
+        $("offers-container").classList.add("hidden");$("active-controls").classList.remove("hidden");
+        if(o.driverPhone){$("call-driver-btn").href=`tel:+${normPhone(o.driverPhone)}`;$("call-driver-btn").classList.remove("hidden")}
+        ["driver-track-card","arrived-card","intransit-card"].forEach(id=>$(id).classList.add("hidden"));
+        if(o.status==="accepted"){
+          $("driver-track-card").classList.remove("hidden");
+          const dist=o.driverLat&&o.clientLat?formatDistance(o.driverLat,o.driverLon,o.clientLat,o.clientLon):(o.distLabel||"Водитель едет к вам");
+          $("driver-dist-text").textContent=dist;
+          $("map-driver-btn").classList.remove("hidden");$("map-driver-btn").onclick=()=>openMapModal(o);
+        }else if(o.status==="arrived"){
+          $("arrived-card").classList.remove("hidden");if(o.arrivedAt)startWaitTimer(Number(o.arrivedAt));
+        }else if(o.status==="intransit"){
+          $("intransit-card").classList.remove("hidden");$("intransit-dest-text").textContent=`Назначение: ${o.to}`;
+          $("map-transit-btn").onclick=()=>openMapModal(o);
+        }
+      }else if(o.status==="completed"||o.status==="cancelled"){
+        clearInterval(pollTmr);clearInterval(waitTmr);
+        ["active-controls","offers-container"].forEach(id=>$(id).classList.add("hidden"));
+        $("new-order-controls").classList.remove("hidden");
+        addMsg(o.status==="completed"?"Поездка завершена! Спасибо, что выбрали АвтоПульс.":"Заявка отменена.");
       }
-    }else if(["accepted","arrived","intransit"].includes(o.status)){
-      $("offers-container").classList.add("hidden");$("active-controls").classList.remove("hidden");
-      if(o.driverPhone){$("call-driver-btn").href=`tel:+${normPhone(o.driverPhone)}`;$("call-driver-btn").classList.remove("hidden")}
-      ["driver-track-card","arrived-card","intransit-card"].forEach(id=>$(id).classList.add("hidden"));
-      if(o.status==="accepted"){
-        $("driver-track-card").classList.remove("hidden");
-        const dist=o.driverLat&&o.clientLat?formatDistance(o.driverLat,o.driverLon,o.clientLat,o.clientLon):(o.distLabel||"Водитель едет к вам");
-        $("driver-dist-text").textContent=dist;
-        $("map-driver-btn").classList.remove("hidden");$("map-driver-btn").onclick=()=>openMapModal(o);
-      }else if(o.status==="arrived"){
-        $("arrived-card").classList.remove("hidden");if(o.arrivedAt)startWaitTimer(Number(o.arrivedAt));
-      }else if(o.status==="intransit"){
-        $("intransit-card").classList.remove("hidden");$("intransit-dest-text").textContent=`Назначение: ${o.to}`;
-        $("map-transit-btn").onclick=()=>openMapModal(o);
-      }
-    }else if(o.status==="completed"||o.status==="cancelled"){
-      clearInterval(pollTmr);clearInterval(waitTmr);
-      ["active-controls","offers-container"].forEach(id=>$(id).classList.add("hidden"));
-      $("new-order-controls").classList.remove("hidden");
-      addMsg(o.status==="completed"?"Поездка завершена! Спасибо, что выбрали АвтоПульс.":"Заявка отменена.");
-    }
+    }catch(_){}
   };
   poll();pollTmr=setInterval(poll,3500);
 };
@@ -399,71 +415,76 @@ $("confirm-pin-btn").onclick=async()=>{
       err.textContent=j.error||"Ошибка создания платежа";err.classList.remove("hidden");
     }
   }catch(e){
-    err.textContent="Ошибка связи с сервером (pay.avtopulse-uhta.ru). Проверьте работу Worker или интернет.";
+    err.textContent="Ошибка связи с базой данных. Проверьте интернет или доступ к Firebase.";
     err.classList.remove("hidden");
   }finally{
     btn.disabled=false;btn.textContent="Войти";
   }
 };
-
 const startGeoShare=oid=>{
   if(geoWatchId||!navigator.geolocation)return;
   geoWatchId=navigator.geolocation.watchPosition(p=>{
-    fsPatch(`orders/${oid}`,{driverLat:String(p.coords.latitude),driverLon:String(p.coords.longitude)});
+    fsPatch(`orders/${oid}`,{driverLat:String(p.coords.latitude),driverLon:String(p.coords.longitude)}).catch(()=>{});
   },()=>{},{enableHighAccuracy:true,maximumAge:5000});
 };
 const loadDriverOrders=async()=>{
-  const box=$("driver-box");const list=await fsList("orders");box.innerHTML="";
-  const active=list.filter(o=>["searching","open","accepted","arrived","intransit"].includes(o.status));
-  if(!active.length){box.innerHTML='<div style="color:#888;text-align:center;margin-top:20px">Активных заявок пока нет</div>';return}
-  active.forEach(o=>{
-    const mine=o.driverPhone===drvPhone;
-    if((o.status!=="searching"&&o.status!=="open")&&!mine)return;
-    const c=document.createElement("div");c.className=`card ${mine?"accepted":""}`;
-    c.innerHTML=`<div style="display:flex;justify-content:space-between"><strong style="color:#FF5C77">${o.price} ₽ • ${o.payment||"Наличные"}</strong><span style="font-size:12px;color:#aaa">${o.status}</span></div>
-    <div style="font-size:14px"><strong>А:</strong> ${o.from}</div><div style="font-size:14px"><strong>Б:</strong> ${o.to}</div>
-    ${o.extraStop?`<div style="font-size:13px;color:#FF5C77"><strong>Заезд:</strong> ${o.extraStop}</div>`:""}
-    ${o.options?`<div style="font-size:12px;color:#10B981">Опции: ${o.options}</div>`:""}`;
-    if(o.status==="searching"||o.status==="open"){
-      const row=document.createElement("div");row.style.cssText="display:flex;gap:6px;margin-top:4px";
-      row.innerHTML=`<input type="number" value="${o.price}" style="padding:8px;font-size:14px"><button type="button" class="btn" style="padding:8px 14px">Предложить цену</button>`;
-      row.querySelector("button").onclick=async()=>{
-        const pr=String(Number(row.children.item(0).value)||o.price);
-        await fsAdd(`orders/${o.id}/offers`,{driverPhone:drvPhone,price:pr,status:"pending"});
-        row.querySelector("button").textContent="Отправлено";row.querySelector("button").disabled=true;
-      };
-      c.appendChild(row);
-    }else if(mine){
-      startGeoShare(o.id);
-      const act=document.createElement("div");act.style.cssText="display:flex;gap:8px;margin-top:4px";
-      if(o.status==="accepted"){
-        act.innerHTML='<button type="button" class="btn btn-green" style="flex:1">На месте</button>';
-        act.querySelector("button").onclick=()=>fsPatch(`orders/${o.id}`,{status:"arrived",arrivedAt:Date.now()}).then(loadDriverOrders);
-      }else if(o.status==="arrived"){
-        act.innerHTML=`<button type="button" class="btn btn-coral" style="flex:1">Поехали в точку Б ${o.clientComing==="1"?"(Выходит!)":""}</button>`;
-        act.querySelector("button").onclick=()=>fsPatch(`orders/${o.id}`,{status:"intransit"}).then(loadDriverOrders);
-      }else if(o.status==="intransit"){
-        act.innerHTML='<button type="button" class="btn btn-green" style="flex:1">Завершить поездку</button>';
-        act.querySelector("button").onclick=()=>{if(geoWatchId){navigator.geolocation.clearWatch(geoWatchId);geoWatchId=null}fsPatch(`orders/${o.id}`,{status:"completed"}).then(loadDriverOrders)};
+  const box=$("driver-box");
+  try{
+    const list=await fsList("orders");box.innerHTML="";
+    const active=list.filter(o=>["searching","open","accepted","arrived","intransit"].includes(o.status));
+    if(!active.length){box.innerHTML='<div style="color:#888;text-align:center;margin-top:20px">Активных заявок пока нет</div>';return}
+    active.forEach(o=>{
+      const mine=o.driverPhone===drvPhone;
+      if((o.status!=="searching"&&o.status!=="open")&&!mine)return;
+      const c=document.createElement("div");c.className=`card ${mine?"accepted":""}`;
+      c.innerHTML=`<div style="display:flex;justify-content:space-between"><strong style="color:#FF5C77">${o.price} ₽ • ${o.payment||"Наличные"}</strong><span style="font-size:12px;color:#aaa">${o.status}</span></div>
+      <div style="font-size:14px"><strong>А:</strong> ${o.from}</div><div style="font-size:14px"><strong>Б:</strong> ${o.to}</div>
+      ${o.extraStop?`<div style="font-size:13px;color:#FF5C77"><strong>Заезд:</strong> ${o.extraStop}</div>`:""}
+      ${o.options?`<div style="font-size:12px;color:#10B981">Опции: ${o.options}</div>`:""}`;
+      if(o.status==="searching"||o.status==="open"){
+        const row=document.createElement("div");row.style.cssText="display:flex;gap:6px;margin-top:4px";
+        row.innerHTML=`<input type="number" value="${o.price}" style="padding:8px;font-size:14px"><button type="button" class="btn" style="padding:8px 14px">Предложить цену</button>`;
+        row.querySelector("button").onclick=async()=>{
+          const pr=String(Number(row.children.item(0).value)||o.price);
+          await fsAdd(`orders/${o.id}/offers`,{driverPhone:drvPhone,price:pr,status:"pending"});
+          row.querySelector("button").textContent="Отправлено";row.querySelector("button").disabled=true;
+        };
+        c.appendChild(row);
+      }else if(mine){
+        startGeoShare(o.id);
+        const act=document.createElement("div");act.style.cssText="display:flex;gap:8px;margin-top:4px";
+        if(o.status==="accepted"){
+          act.innerHTML='<button type="button" class="btn btn-green" style="flex:1">На месте</button>';
+          act.querySelector("button").onclick=()=>fsPatch(`orders/${o.id}`,{status:"arrived",arrivedAt:Date.now()}).then(loadDriverOrders);
+        }else if(o.status==="arrived"){
+          act.innerHTML=`<button type="button" class="btn btn-coral" style="flex:1">Поехали в точку Б ${o.clientComing==="1"?"(Выходит!)":""}</button>`;
+          act.querySelector("button").onclick=()=>fsPatch(`orders/${o.id}`,{status:"intransit"}).then(loadDriverOrders);
+        }else if(o.status==="intransit"){
+          act.innerHTML='<button type="button" class="btn btn-green" style="flex:1">Завершить поездку</button>';
+          act.querySelector("button").onclick=()=>{if(geoWatchId){navigator.geolocation.clearWatch(geoWatchId);geoWatchId=null}fsPatch(`orders/${o.id}`,{status:"completed"}).then(loadDriverOrders)};
+        }
+        c.appendChild(act);
       }
-      c.appendChild(act);
-    }
-    box.appendChild(c);
-  });
+      box.appendChild(c);
+    });
+  }catch(_){}
 };
 const loadDriverChat=async()=>{
-  const box=$("driver-chat-box");const msgs=await fsList("driver_chat");
-  msgs.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));box.innerHTML="";
-  msgs.slice(-40).forEach(m=>{
-    const d=document.createElement("div");d.className=`msg ${(m.sender||m.phone)===drvPhone?"user":"bot"}`;
-    d.innerHTML=`<div style="font-size:11px;color:#FF5C77;margin-bottom:2px">+${m.sender||m.phone}</div><div>${m.text}</div>`;
-    box.appendChild(d);
-  });
-  box.scrollTop=box.scrollHeight;
+  const box=$("driver-chat-box");
+  try{
+    const msgs=await fsList("driver_chat");
+    msgs.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));box.innerHTML="";
+    msgs.slice(-40).forEach(m=>{
+      const d=document.createElement("div");d.className=`msg ${(m.sender||m.phone)===drvPhone?"user":"bot"}`;
+      d.innerHTML=`<div style="font-size:11px;color:#FF5C77;margin-bottom:2px">+${m.sender||m.phone}</div><div>${m.text}</div>`;
+      box.appendChild(d);
+    });
+    box.scrollTop=box.scrollHeight;
+  }catch(_){}
 };
 $("driver-chat-send").onclick=async()=>{
   const t=$("driver-chat-input").value.trim();if(!t)return;$("driver-chat-input").value="";
-  await fsAdd("driver_chat",{sender:drvPhone,text:t,createdAt:Date.now()});loadDriverChat();
+  try{await fsAdd("driver_chat",{sender:drvPhone,text:t,createdAt:Date.now()});loadDriverChat()}catch(_){}
 };
 const enterDriverMode=()=>{
   isDriver=true;clearInterval(pollTmr);
